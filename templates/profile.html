@@ -35,10 +35,43 @@
 
     <div class="auth-card" style="margin: 0; width: 100%; max-width: none;">
         {% if current_user.is_admin %}
-            <h2 data-i18n="admin_panel_title"><i class="fa-solid fa-user-shield"></i> نظرة عامة (المدير)</h2>
-            <p class="form-hint" data-i18n="admin_panel_hint">مرحباً بك في لوحة تحكم الإدارة.</p>
+            <h2 data-i18n="store_settings_title"><i class="fa-solid fa-store"></i> إعدادات بيانات المتجر (التواصل)</h2>
+            <p class="form-hint" data-i18n="store_settings_hint">سيتم تحديث هذه البيانات في جميع صفحات الموقع مباشرة.</p>
             
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <form action="{{ url_for('profile') }}" method="POST" style="margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa;">
+                <input type="hidden" name="update_store_settings" value="1">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label data-i18n="store_whatsapp"><i class="fa-brands fa-whatsapp"></i> رقم الواتساب الخاص بالمتجر (مع كود الدولة):</label>
+                        <input type="text" name="store_whatsapp" value="{{ store_settings.whatsapp }}" required placeholder="201012345678">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="store_phone"><i class="fa-solid fa-phone"></i> رقم هاتف المتجر:</label>
+                        <input type="text" name="store_phone" value="{{ store_settings.phone }}" required placeholder="01012345678">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fa-brands fa-instagram"></i> رابط Instagram:</label>
+                        <input type="text" name="store_instagram" value="{{ store_settings.instagram }}">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-brands fa-tiktok"></i> رابط TikTok:</label>
+                        <input type="text" name="store_tiktok" value="{{ store_settings.tiktok }}">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-brands fa-facebook"></i> رابط Facebook:</label>
+                    <input type="text" name="store_facebook" value="{{ store_settings.facebook }}">
+                </div>
+                
+                <button type="submit" class="submit-btn" style="background: #e67e22;"><i class="fa-solid fa-cloud-arrow-up"></i> <span data-i18n="save_store_settings">حفظ إعدادات المتجر</span></button>
+            </form>
+
+            <h2 data-i18n="admin_panel_title"><i class="fa-solid fa-user-shield"></i> نظرة عامة</h2>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
                 <div style="flex: 1; background: #e3f2fd; border: 1px solid #90caf9; padding: 20px; border-radius: 8px; text-align: center;">
                     <i class="fa-solid fa-box-open" style="font-size: 2rem; color: #1565c0; margin-bottom: 10px;"></i>
                     <h3 style="color: #1565c0;" data-i18n="total_products">إجمالي المنتجات</h3>
@@ -50,10 +83,10 @@
                     <p style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;">{{ admin_stats.active_coupons }}</p>
                 </div>
             </div>
-            
             <div style="margin-top: 30px; text-align: center;">
                 <a href="{{ url_for('admin_dashboard') }}" class="add-to-cart-btn" style="background: var(--primary-color); text-decoration: none; padding: 12px 25px; font-size: 1.1rem;"><i class="fa-solid fa-gauge-high"></i> <span data-i18n="go_to_admin_btn">الانتقال للوحة التحكم الكاملة</span></a>
             </div>
+            
         {% else %}
             <h2 data-i18n="order_history_title"><i class="fa-solid fa-clock-rotate-left"></i> سجل طلباتي</h2>
             <p class="form-hint" data-i18n="order_history_hint">تابع حالة طلباتك السابقة من هنا.</p>

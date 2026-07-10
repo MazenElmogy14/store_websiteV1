@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="site_title">موقع المتجر</title>
+    <title data-i18n="site_title">إيليجانس | المتجر</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -20,20 +20,28 @@
     <header class="main-header">
         <div class="logo-container">
             <i class="fa-solid fa-crown logo-icon" style="color: #d4af37;"></i>
-            <h1 data-i18n="site_title">موقع المتجر</h1>
+            <h1 data-i18n="site_title">إيليجانس | المتجر</h1>
         </div>
         <p class="slogan" data-i18n="slogan">أفضل المنتجات بأقل الأسعار</p>
         
         <div class="social-links">
-            <a href="#" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://wa.me/201234567890" target="_blank"><i class="fa-brands fa-whatsapp"></i></a>
-            <a href="#" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+            {% if store_settings.instagram and store_settings.instagram != '#' %}
+                <a href="{{ store_settings.instagram }}" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+            {% endif %}
+            {% if store_settings.whatsapp and store_settings.whatsapp != '#' %}
+                <a href="https://wa.me/{{ store_settings.whatsapp }}" target="_blank"><i class="fa-brands fa-whatsapp"></i></a>
+            {% endif %}
+            {% if store_settings.tiktok and store_settings.tiktok != '#' %}
+                <a href="{{ store_settings.tiktok }}" target="_blank"><i class="fa-brands fa-tiktok"></i></a>
+            {% endif %}
+            {% if store_settings.facebook and store_settings.facebook != '#' %}
+                <a href="{{ store_settings.facebook }}" target="_blank"><i class="fa-brands fa-facebook"></i></a>
+            {% endif %}
         </div>
     </header>
 
     <nav class="top-nav">
         <div class="nav-right">
-            <!-- زر تغيير اللغة -->
             <a href="#" onclick="toggleLanguage(); return false;" class="lang-btn" title="تغيير اللغة" style="background: rgba(255, 255, 255, 0.15); padding: 6px 16px; border-radius: 20px;">
                 <i class="fa-solid fa-globe"></i> 
                 <span id="lang-btn-text">English</span>
@@ -45,6 +53,9 @@
             {% else %}
                 <a href="{{ url_for('index') }}"><i class="fa-solid fa-compass"></i> <span data-i18n="home">الرئيسية</span></a>
                 <a href="{{ url_for('track_order') }}"><i class="fa-solid fa-box-open"></i> <span data-i18n="track_order">تتبع طلبك</span></a>
+                <a href="#" onclick="showWishlistModal(); return false;" class="wishlist-btn" title="المفضلة">
+                    <i class="fa-solid fa-heart"></i> <span id="wishlist-count" class="badge wishlist-badge">0</span>
+                </a>
                 <a href="{{ url_for('cart') }}" class="cart-btn">
                     <i class="fa-solid fa-bag-shopping"></i> <span data-i18n="cart">عربة التسوق</span>
                     <span id="cart-count" class="badge">0</span>
@@ -80,15 +91,24 @@
         {% block content %}{% endblock %}
     </div>
 
+    <div id="wishlist-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeWishlistModal()">&times;</span>
+            <h3 class="modal-title"><i class="fa-solid fa-heart" style="color: #e74c3c;"></i> المفضلة</h3>
+            <div id="wishlist-items-container"></div>
+        </div>
+    </div>
+
     <div id="toast-container" class="toast-container"></div>
     
-    <a href="https://wa.me/201234567890" target="_blank" class="floating-wa">
+    <!-- زرار الواتساب العائم -->
+    <a href="https://wa.me/{{ store_settings.whatsapp }}" target="_blank" class="floating-wa">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
     <footer>
         <div class="footer-content">
-            <p>&copy; 2026 <strong data-i18n="site_title">موقع المتجر</strong>. <span data-i18n="footer_copy">جميع الحقوق محفوظة.</span></p>
+            <p>&copy; 2026 <strong data-i18n="site_title">إيليجانس | المتجر</strong>. <span data-i18n="footer_copy">جميع الحقوق محفوظة.</span></p>
             <p class="footer-note" data-i18n="footer_note">صنع بحب لخدمتكم.</p>
         </div>
     </footer>

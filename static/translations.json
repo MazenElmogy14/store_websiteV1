@@ -183,7 +183,13 @@
     "starts": "يبدأ:",
     "expires": "ينتهي:",
     "unlimited": "غير محدود",
-    "no_coupons": "لا توجد كوبونات."
+    "no_coupons": "لا توجد كوبونات.",
+    "store_settings_title": "إعدادات بيانات المتجر (التواصل)",
+    "store_settings_hint": "سيتم تحديث هذه البيانات في جميع صفحات الموقع مباشرة.",
+    "store_whatsapp": "رقم الواتساب الخاص بالمتجر (مع كود الدولة):",
+    "store_phone": "رقم هاتف المتجر:",
+    "save_store_settings": "حفظ إعدادات المتجر",
+    "go_to_admin_btn": "الانتقال للوحة التحكم الكاملة"
   },
   "en": {
     "site_title": "Elegance | Store",
@@ -369,6 +375,12 @@
     "starts": "Starts:",
     "expires": "Expires:",
     "unlimited": "Unlimited",
-    "no_coupons": "No coupons found."
+    "no_coupons": "No coupons found.",
+    "store_settings_title": "Store Contact Settings",
+    "store_settings_hint": "These details will instantly update across the entire website.",
+    "store_whatsapp": "Store WhatsApp Number (with country code):",
+    "store_phone": "Store Phone Number:",
+    "save_store_settings": "Save Store Settings",
+    "go_to_admin_btn": "Go to Admin Dashboard"
   }
 }
