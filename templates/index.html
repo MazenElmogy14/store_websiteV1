@@ -1,137 +1,108 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 
-<!-- شريط البحث والترتيب المتطور -->
 <div class="search-sort-bar">
     <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="live-search-input" placeholder="ابحث عن اسم منتج أو مميزاته..." oninput="filterProducts()">
+        <!-- أضفنا data-i18n هنا للبحث -->
+        <input type="text" id="live-search-input" data-i18n="search_placeholder" placeholder="ابحث عن منتج..." oninput="filterProducts()">
     </div>
     <div class="sort-box">
-        <label for="sort-select">ترتيب حسب:</label>
+        <!-- أضفنا data-i18n هنا للترتيب -->
+        <label for="sort-select" data-i18n="sort_label">ترتيب حسب:</label>
         <select id="sort-select" onchange="sortProducts()">
-            <option value="default">الأحدث في المتجر</option>
-            <option value="price-low">السعر: من الأقل للأعلى</option>
-            <option value="price-high">السعر: من الأعلى للأقل</option>
-            <option value="discount">العروض والخصومات فقط</option>
+            <option value="default" data-i18n="sort_default">الافتراضي (الأحدث)</option>
+            <option value="price-low" data-i18n="sort_price_low">السعر (الأقل للأعلى)</option>
+            <option value="price-high" data-i18n="sort_price_high">السعر (الأعلى للأقل)</option>
         </select>
     </div>
 </div>
 
-<!-- شريط فلترة التصنيفات -->
 <div class="category-filter-bar">
-    <a href="{{ url_for('index') }}" class="cat-chip {% if not selected_cat %}active{% endif %}">الكل</a>
+    <!-- أضفنا data-i18n للكل -->
+    <a href="{{ url_for('index') }}" class="cat-chip {% if not selected_cat %}active{% endif %}" data-i18n="all_categories">الكل</a>
     {% for cat in categories %}
         <a href="{{ url_for('index', category=cat[0]) }}" class="cat-chip {% if selected_cat == cat[0] %}active{% endif %}">{{ cat[1] }}</a>
     {% endfor %}
 </div>
 
-<h2 class="section-title">أحدث المنتجات والعروض</h2>
+<!-- أضفنا data-i18n لعنوان القسم -->
+<h2 class="section-title" data-i18n="latest_products">أحدث المنتجات</h2>
 
 <div id="products-grid-container" class="products-grid">
     {% for prod in products %}
     {% set is_active_discount = (prod[3] > 0 and prod[3] < prod[2]) and (not prod[7] or prod[7] >= current_time) %}
     {% set active_price = prod[3] if is_active_discount else prod[2] %}
     {% set is_out_of_stock = (prod[8] <= 0) %}
-    
-    <!-- تمرير حالة الأدمن إلى كود الجافاسكربت الخاص بالعرض السريع -->
     {% set is_admin_str = 'true' if current_user.is_authenticated and current_user.is_admin else 'false' %}
     
-    <div class="product-card" data-name="{{ prod[1] }}" data-desc="{{ prod[5] }}" data-price="{{ active_price }}" data-discount="{{ 'yes' if is_active_discount else 'no' }}">
-        
-        <!-- صورة المنتج قابلة للضغط لفتح العرض السريع -->
+    <div class="product-card" data-id="{{ prod[0] }}" data-name="{{ prod[1] }}" data-desc="{{ prod[5] }}" data-price="{{ active_price }}">
         <div class="image-wrapper" style="position: relative; cursor: pointer;" 
              onclick="openQuickView({{ prod[0] }}, '{{ prod[1] }}', {{ prod[2] }}, {{ prod[3] if is_active_discount else 0 }}, '{{ prod[4] }}', `{{ prod[5] }}`, {{ prod[8] }}, {{ is_admin_str }})">
+            
             <img src="{{ prod[4] }}" alt="{{ prod[1] }}" style="{% if is_out_of_stock %}filter: grayscale(100%); opacity: 0.7;{% endif %}">
             
-            <!-- إخفاء زر المفضلة عن الأدمن -->
             {% if not (current_user.is_authenticated and current_user.is_admin) %}
-                <button class="wishlist-card-btn" onclick="event.stopPropagation(); toggleWishlist({{ prod[0] }}, '{{ prod[1] }}', {{ active_price }}, '{{ prod[4] }}', this)" title="أضف للمفضلة">
+                <button class="wishlist-card-btn" data-id="{{ prod[0] }}" onclick="event.stopPropagation(); toggleWishlist({{ prod[0] }}, '{{ prod[1] }}', {{ active_price }}, '{{ prod[4] }}', this)">
                     <i class="fa-regular fa-heart"></i>
                 </button>
             {% endif %}
-
-            <!-- شارة الخصم العصرية -->
-            {% if is_active_discount and not is_out_of_stock %}
-                <span class="discount-badge">خصم 🔥</span>
-            {% endif %}
             
-            <!-- شارة نفاد المخزون -->
-            {% if is_out_of_stock %}
-                <span class="discount-badge" style="background: #333; left: 50%; transform: translateX(-50%); top: 40%; font-size: 1rem; padding: 6px 15px;">نفد المخزون ❌</span>
-            {% endif %}
-
-            <!-- شارة التصنيف -->
-            <span class="cat-badge">{{ prod[9] or 'عام' }}</span>
+            <span class="cat-badge">{{ prod[9] or ' ' }}</span>
         </div>
         
         <div class="product-info">
             <h3 style="cursor: pointer;" onclick="openQuickView({{ prod[0] }}, '{{ prod[1] }}', {{ prod[2] }}, {{ prod[3] if is_active_discount else 0 }}, '{{ prod[4] }}', `{{ prod[5] }}`, {{ prod[8] }}, {{ is_admin_str }})">{{ prod[1] }}</h3>
             <p class="description">{{ prod[5][:40] }}...</p>
             
-            <!-- إخفاء تنبيه المخزون المنخفض عن الأدمن -->
-            {% if not (current_user.is_authenticated and current_user.is_admin) %}
-                {% if not is_out_of_stock and prod[8] < 3 %}
-                    <div style="background: #fbe9e7; color: #d84315; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 10px; font-weight: bold;">
-                        <i class="fa-solid fa-fire"></i> أسرع! متبقي {{ prod[8] }} فقط
-                    </div>
-                {% endif %}
-            {% endif %}
-
-            <!-- عرض وقت انتهاء الخصم -->
-            {% if is_active_discount and prod[7] and not is_out_of_stock %}
-                <div class="expiry-timer">
-                    <i class="fa-solid fa-stopwatch"></i> ينتهي الخصم في: <strong style="direction: ltr; display: inline-block;">{{ prod[7].replace('T', ' ') }}</strong>
-                </div>
-            {% endif %}
-
             <div class="price-action">
                 <div>
                     {% if is_active_discount %}
-                        <span style="text-decoration: line-through; color: #999; font-size: 0.85rem; display: block;">{{ prod[2] }} ج.م</span>
-                        <span class="price" style="color: #e74c3c;">{{ prod[3] }} ج.م</span>
+                        <span style="text-decoration: line-through; color: #999; font-size: 0.85rem; display: block;">{{ prod[2] }}</span>
+                        <span class="price" style="color: #e74c3c;">{{ prod[3] }}</span>
                     {% else %}
-                        <span class="price">{{ prod[2] }} ج.م</span>
+                        <span class="price">{{ prod[2] }}</span>
                     {% endif %}
                 </div>
                 
-                <!-- إخفاء زر إضافة للسلة عن الأدمن -->
                 {% if not (current_user.is_authenticated and current_user.is_admin) %}
                     {% if is_out_of_stock %}
-                        <button class="add-to-cart-btn" style="background: #ccc; cursor: not-allowed;" disabled>نفد المخزون</button>
+                        <!-- أضفنا data-i18n لزر نفاذ الكمية -->
+                        <button class="add-to-cart-btn" style="background: #ccc; cursor: not-allowed;" disabled>
+                            <span data-i18n="out_of_stock">نفذت الكمية</span>
+                        </button>
                     {% else %}
+                        <!-- أضفنا data-i18n لزر الإضافة للسلة -->
                         <button class="add-to-cart-btn" onclick="addToCart({{ prod[0] }}, '{{ prod[1] }}', {{ active_price }})">
-                            <i class="fa-solid fa-plus"></i> أضف
+                            <i class="fa-solid fa-plus"></i> <span data-i18n="add_to_cart">أضف للسلة</span>
                         </button>
                     {% endif %}
                 {% endif %}
             </div>
         </div>
     </div>
-    {% else %}
-    <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: white; border-radius: 8px;">
-        <p style="font-size: 1.1rem; color: #666;">لا توجد منتجات متاحة في هذا التصنيف حالياً.</p>
-    </div>
     {% endfor %}
 </div>
 
-<div id="no-search-results" style="display: none; text-align: center; padding: 50px 20px; background: white; border-radius: 12px; margin-top: 20px;">
-    <i class="fa-solid fa-face-frown" style="font-size: 3rem; color: #ccc; margin-bottom: 15px;"></i>
-    <p style="font-size: 1.2rem; color: #666;">عفواً، لم نتمكن من العثور على منتجات تطابق بحثك!</p>
+<div id="no-search-results" style="display: none; text-align: center; padding: 50px 20px;">
+    <i class="fa-solid fa-face-frown" style="font-size: 3rem; color: #ccc;"></i>
+    <!-- أضفنا data-i18n لرسالة عدم وجود نتائج -->
+    <p style="font-size: 1.2rem; color: #666;" data-i18n="no_results">عفواً، لا يوجد نتائج مطابقة!</p>
 </div>
 
-<!-- نافذة العرض السريع (Quick View Modal) -->
+<!-- (Quick View Modal) -->
 <div id="quickview-modal" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width: 700px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    <div class="modal-content" style="max-width: 700px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
         <span class="close-modal" onclick="closeQuickViewModal()">&times;</span>
         <div><img id="qv-image" src="" style="width: 100%; border-radius: 12px; object-fit: cover;"></div>
         <div>
-            <h2 id="qv-title" style="color: var(--primary-color); margin-bottom: 10px;"></h2>
-            <p id="qv-desc" style="color: #666; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6;"></p>
-            <div id="qv-price-box" style="margin-bottom: 25px; font-size: 1.5rem; font-weight: bold; color: var(--accent-color);"></div>
-            <div id="qv-stock-badge" style="margin-bottom: 20px;"></div>
-            <!-- زر الإضافة للسلة في العرض السريع (سيتم إخفاؤه في الجافاسكربت إذا كان أدمن) -->
-            <button id="qv-add-btn" class="add-to-cart-btn" style="width: 100%; padding: 12px; font-size: 1.1rem;"><i class="fa-solid fa-cart-plus"></i> إضافة إلى السلة</button>
+            <h2 id="qv-title" style="color: var(--primary-color);"></h2>
+            <p id="qv-desc" style="color: #666; margin-bottom: 20px;"></p>
+            <div id="qv-price-box" style="font-size: 1.5rem; font-weight: bold; color: var(--accent-color); margin-bottom: 25px;"></div>
+            <!-- أضفنا data-i18n لزر السلة في النافذة المنبثقة -->
+            <button id="qv-add-btn" class="add-to-cart-btn" style="width: 100%; padding: 12px;">
+                <i class="fa-solid fa-cart-plus"></i> <span data-i18n="add_to_cart">أضف للسلة</span>
+            </button>
         </div>
     </div>
 </div>

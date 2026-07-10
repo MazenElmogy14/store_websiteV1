@@ -1,74 +1,71 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: start;">
     
     <div class="auth-card profile-card" style="margin: 0; width: 100%;">
-        <h2><i class="fa-solid fa-id-card"></i> الملف الشخصي</h2>
-        <p class="form-hint">يمكنك تعديل بيانات الحساب الخاصة بك من هنا.</p>
-
+        <h2 data-i18n="profile_title"><i class="fa-solid fa-id-card"></i> بياناتي الشخصية</h2>
+        <p class="form-hint" data-i18n="profile_hint">تحديث بياناتك يسهل عملية الطلب في المستقبل.</p>
+        
         <form action="{{ url_for('profile') }}" method="POST">
             <div class="form-group">
-                <label for="name"><i class="fa-solid fa-user"></i> الاسم الكامل</label>
+                <label for="name"><i class="fa-solid fa-user"></i> <span data-i18n="full_name_label">الاسم بالكامل</span></label>
                 <input type="text" id="name" name="name" value="{{ current_user.name }}" required>
             </div>
             <div class="form-group">
-                <label for="email"><i class="fa-solid fa-envelope"></i> البريد (لا يمكن تعديله)</label>
+                <label for="email"><i class="fa-solid fa-envelope"></i> <span data-i18n="email_read_only">البريد الإلكتروني (غير قابل للتعديل)</span></label>
                 <input type="email" id="email" value="{{ current_user.email }}" disabled style="background: #e9ecef; cursor: not-allowed; color: #6c757d;">
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label for="phone"><i class="fa-solid fa-phone"></i> الهاتف العادي</label>
+                    <label for="phone"><i class="fa-solid fa-phone"></i> <span data-i18n="phone_label">رقم الهاتف</span></label>
                     <input type="tel" id="phone" name="phone" value="{{ current_user.phone or '' }}">
                 </div>
                 <div class="form-group">
-                    <label for="whatsapp"><i class="fa-brands fa-whatsapp"></i> الواتساب الأساسي *</label>
+                    <label for="whatsapp"><i class="fa-brands fa-whatsapp"></i> <span data-i18n="whatsapp_label">رقم الواتساب *</span></label>
                     <input type="tel" id="whatsapp" name="whatsapp" value="{{ current_user.whatsapp or '' }}" required>
                 </div>
             </div>
             <div class="form-group">
-                <label for="address"><i class="fa-solid fa-location-dot"></i> العنوان / الفرع</label>
+                <label for="address"><i class="fa-solid fa-location-dot"></i> <span data-i18n="address_label">العنوان بالتفصيل</span></label>
                 <textarea id="address" name="address" rows="3">{{ current_user.address or '' }}</textarea>
             </div>
-            <button type="submit" class="submit-btn"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات</button>
+            <button type="submit" class="submit-btn"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="save_changes_btn">حفظ التعديلات</span></button>
         </form>
     </div>
 
     <div class="auth-card" style="margin: 0; width: 100%; max-width: none;">
         {% if current_user.is_admin %}
-            <!-- بروفايل مخصص للأدمن -->
-            <h2><i class="fa-solid fa-user-shield"></i> ملخص حساب الإدارة</h2>
-            <p class="form-hint">نظرة سريعة على حالة المتجر النشطة.</p>
+            <h2 data-i18n="admin_panel_title"><i class="fa-solid fa-user-shield"></i> نظرة عامة (المدير)</h2>
+            <p class="form-hint" data-i18n="admin_panel_hint">مرحباً بك في لوحة تحكم الإدارة.</p>
             
             <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
                 <div style="flex: 1; background: #e3f2fd; border: 1px solid #90caf9; padding: 20px; border-radius: 8px; text-align: center;">
                     <i class="fa-solid fa-box-open" style="font-size: 2rem; color: #1565c0; margin-bottom: 10px;"></i>
-                    <h3 style="color: #1565c0;">المنتجات المعروضة</h3>
+                    <h3 style="color: #1565c0;" data-i18n="total_products">إجمالي المنتجات</h3>
                     <p style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;">{{ admin_stats.total_products }}</p>
                 </div>
                 <div style="flex: 1; background: #e8f5e9; border: 1px solid #a5d6a7; padding: 20px; border-radius: 8px; text-align: center;">
                     <i class="fa-solid fa-ticket" style="font-size: 2rem; color: #2e7d32; margin-bottom: 10px;"></i>
-                    <h3 style="color: #2e7d32;">الكوبونات النشطة</h3>
+                    <h3 style="color: #2e7d32;" data-i18n="active_coupons">الكوبونات النشطة</h3>
                     <p style="font-size: 1.5rem; font-weight: bold; margin-top: 5px;">{{ admin_stats.active_coupons }}</p>
                 </div>
             </div>
             
             <div style="margin-top: 30px; text-align: center;">
-                <a href="{{ url_for('admin_dashboard') }}" class="add-to-cart-btn" style="background: var(--primary-color); text-decoration: none; padding: 12px 25px; font-size: 1.1rem;"><i class="fa-solid fa-gauge-high"></i> الانتقال للوحة التحكم الكاملة</a>
+                <a href="{{ url_for('admin_dashboard') }}" class="add-to-cart-btn" style="background: var(--primary-color); text-decoration: none; padding: 12px 25px; font-size: 1.1rem;"><i class="fa-solid fa-gauge-high"></i> <span data-i18n="go_to_admin_btn">الانتقال للوحة التحكم الكاملة</span></a>
             </div>
         {% else %}
-            <!-- بروفايل العميل العادي -->
-            <h2><i class="fa-solid fa-clock-rotate-left"></i> سجل طلباتي السابقة</h2>
-            <p class="form-hint">راجع طلباتك وتتبع حالتها أو قم بإعادة الطلب بضغطة زر.</p>
-
+            <h2 data-i18n="order_history_title"><i class="fa-solid fa-clock-rotate-left"></i> سجل طلباتي</h2>
+            <p class="form-hint" data-i18n="order_history_hint">تابع حالة طلباتك السابقة من هنا.</p>
             <div class="admin-table-wrapper">
                 <table class="admin-table" style="font-size: 0.95rem;">
                     <thead>
                         <tr>
-                            <th>رقم التتبع</th>
-                            <th>التفاصيل</th>
-                            <th>الإجمالي</th>
-                            <th>الحالة والتاريخ</th>
-                            <th>إجراء سريع</th>
+                            <th data-i18n="table_order_num">رقم الطلب</th>
+                            <th data-i18n="table_order_details">التفاصيل</th>
+                            <th data-i18n="table_total">الإجمالي</th>
+                            <th data-i18n="table_status">الحالة</th>
+                            <th data-i18n="table_action">إجراء</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -79,9 +76,9 @@
                             <td><strong>{{ order[2] }} ج.م</strong></td>
                             <td style="text-align: center;">
                                 <span style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem;
-                                {% if 'التسليم' in order[3] %} background: #d4edda; color: #155724;
-                                {% elif 'التوصيل' in order[3] %} background: #cce5ff; color: #004085;
-                                {% elif 'التأكيد' in order[3] %} background: #fff3cd; color: #856404;
+                                {% if 'مكتمل' in order[3] %} background: #d4edda; color: #155724;
+                                {% elif 'شحن' in order[3] %} background: #cce5ff; color: #004085;
+                                {% elif 'مراجعة' in order[3] %} background: #fff3cd; color: #856404;
                                 {% elif 'ملغي' in order[3] %} background: #f8d7da; color: #721c24;
                                 {% else %} background: #e2e3e5; color: #383d41; {% endif %}">
                                 {{ order[3] }}
@@ -89,11 +86,11 @@
                                 <br><small style="color: #777;">{{ order[4][:10] }}</small>
                             </td>
                             <td style="text-align: center;">
-                                <button onclick="reorderItems('{{ order[0] }}')" class="add-to-cart-btn" style="background: #e67e22; padding: 6px 12px; font-size: 0.85rem;"><i class="fa-solid fa-rotate-left"></i> إعادة الطلب</button>
+                                <button onclick="reorderItems('{{ order[0] }}')" class="add-to-cart-btn" style="background: #e67e22; padding: 6px 12px; font-size: 0.85rem;"><i class="fa-solid fa-rotate-left"></i> <span data-i18n="reorder_btn">إعادة الطلب</span></button>
                             </td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" style="text-align: center; padding: 20px; color: #777;">لم تقم بأي طلبات سابقة.</td></tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 20px; color: #777;" data-i18n="no_orders_msg">لا توجد طلبات سابقة.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

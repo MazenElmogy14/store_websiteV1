@@ -1,42 +1,42 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="admin-header">
-    <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
+    <h2 data-i18n="admin_dashboard_title"><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
     <div class="admin-nav-tabs">
-        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
-        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}"><i class="fa-solid fa-tags"></i> المنتجات والمخزون</a>
-        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
-        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}" data-i18n="admin_tab_orders"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
+        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}" data-i18n="admin_tab_products"><i class="fa-solid fa-tags"></i> المنتجات والمخزون</a>
+        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}" data-i18n="admin_tab_categories"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
+        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}" data-i18n="admin_tab_coupons"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
     </div>
 </div>
 
 <div class="dashboard-cards">
     <div class="card sales">
         <i class="fa-solid fa-sack-dollar"></i>
-        <h3>إجمالي المبيعات</h3>
+        <h3 data-i18n="admin_stat_sales">إجمالي المبيعات</h3>
         <p>{{ stats.sales }} ج.م</p>
     </div>
     <div class="card orders">
         <i class="fa-solid fa-cart-shopping"></i>
-        <h3>إجمالي الطلبات</h3>
+        <h3 data-i18n="admin_stat_orders">إجمالي الطلبات</h3>
         <p>{{ stats.orders }}</p>
     </div>
     <div class="card pending">
         <i class="fa-solid fa-clock"></i>
-        <h3>طلبات قيد المراجعة</h3>
+        <h3 data-i18n="admin_stat_pending">طلبات قيد المراجعة</h3>
         <p>{{ stats.pending }}</p>
     </div>
     <div class="card users">
         <i class="fa-solid fa-users"></i>
-        <h3>العملاء المسجلين</h3>
+        <h3 data-i18n="admin_stat_users">العملاء المسجلين</h3>
         <p>{{ stats.users }}</p>
     </div>
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;">
-    <h3><i class="fa-solid fa-list-check"></i> طلبات العملاء وشحناتهم</h3>
+    <h3 data-i18n="admin_orders_list_title"><i class="fa-solid fa-list-check"></i> طلبات العملاء وشحناتهم</h3>
     <a href="{{ url_for('export_orders') }}" class="submit-btn" style="width: auto; margin: 0; padding: 10px 20px; background: #27ae60; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-        <i class="fa-solid fa-file-excel"></i> تصدير الطلبات (Excel/CSV)
+        <i class="fa-solid fa-file-excel"></i> <span data-i18n="admin_export_btn">تصدير الطلبات (Excel/CSV)</span>
     </a>
 </div>
 
@@ -44,12 +44,12 @@
     <table class="admin-table">
         <thead>
             <tr>
-                <th>التتبع والطباعة</th>
-                <th>العميل والتواصل</th>
-                <th>العنوان</th>
-                <th>الطلبات والإجمالي</th>
-                <th>تحديث حالة الشحنة</th>
-                <th>إجراء سريع</th>
+                <th data-i18n="admin_table_order_invoice">رقم الطلب والفاتورة</th>
+                <th data-i18n="admin_table_customer">العميل والتواصل</th>
+                <th data-i18n="admin_table_address">العنوان</th>
+                <th data-i18n="admin_table_products">المنتجات المطلوبة</th>
+                <th data-i18n="admin_table_update_status">تحديث الحالة</th>
+                <th data-i18n="admin_table_whatsapp">واتساب</th>
             </tr>
         </thead>
         <tbody>
@@ -57,34 +57,35 @@
             <tr>
                 <td style="text-align: center;">
                     <strong style="color: var(--primary-color);">{{ order[1] }}</strong><br>
-                    <!-- زر طباعة بوليصة الشحن -->
-                    <a href="{{ url_for('print_invoice', order_id=order[0]) }}" target="_blank" style="display: inline-block; margin-top: 8px; background: #34495e; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;"><i class="fa-solid fa-print"></i> طباعة البوليصة</a>
+                    <a href="{{ url_for('print_invoice', order_id=order[0]) }}" target="_blank" style="display: inline-block; margin-top: 8px; background: #34495e; color: white; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-size: 0.85rem;">
+                        <i class="fa-solid fa-print"></i> <span data-i18n="print_invoice_btn">طباعة</span>
+                    </a>
                 </td>
                 <td><strong>{{ order[2] }}</strong><br><a href="tel:{{ order[3] }}" style="direction: ltr; display: inline-block;">{{ order[3] }}</a></td>
                 <td style="font-size: 0.85rem; max-width: 180px;">{{ order[4] }}</td>
                 <td class="order-details-cell" style="max-width: 220px;">
                     {{ order[5].replace('\n', '<br>') | safe }}
                     <hr style="margin: 5px 0; border: none; border-top: 1px solid #ddd;">
-                    <strong style="color: var(--accent-color);">الإجمالي: {{ order[6] }} ج.م</strong>
+                    <strong style="color: var(--accent-color);"><span data-i18n="final_total">الإجمالي:</span> {{ order[6] }} ج.م</strong>
                 </td>
                 <td>
                     <form action="{{ url_for('update_order_status', order_id=order[0]) }}" method="POST" style="display: flex; flex-direction: column; gap: 5px;">
                         <select name="status" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold;">
-                            <option value="قيد المراجعة ⏳" {% if order[7] == 'قيد المراجعة ⏳' %}selected{% endif %}>قيد المراجعة ⏳</option>
-                            <option value="تم التأكيد ✅" {% if order[7] == 'تم التأكيد ✅' %}selected{% endif %}>تم التأكيد ✅</option>
-                            <option value="جاري التوصيل 🚚" {% if order[7] == 'جاري التوصيل 🚚' %}selected{% endif %}>جاري التوصيل 🚚</option>
-                            <option value="تم التسليم 📦" {% if order[7] == 'تم التسليم 📦' %}selected{% endif %}>تم التسليم 📦</option>
-                            <option value="ملغي ❌" {% if order[7] == 'ملغي ❌' %}selected{% endif %}>ملغي ❌</option>
+                            <option value="قيد المراجعة" {% if order[7] == 'قيد المراجعة' %}selected{% endif %} data-i18n="status_pending">قيد المراجعة</option>
+                            <option value="جاري التجهيز" {% if order[7] == 'جاري التجهيز' %}selected{% endif %} data-i18n="status_preparing">جاري التجهيز</option>
+                            <option value="تم الشحن" {% if order[7] == 'تم الشحن' %}selected{% endif %} data-i18n="status_shipped">تم الشحن</option>
+                            <option value="مكتمل" {% if order[7] == 'مكتمل' %}selected{% endif %} data-i18n="status_completed">مكتمل</option>
+                            <option value="ملغي" {% if order[7] == 'ملغي' %}selected{% endif %} data-i18n="status_cancelled">ملغي</option>
                         </select>
-                        <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 4px; border-radius: 4px; cursor: pointer;">تحديث</button>
+                        <button type="submit" style="background: var(--primary-color); color: white; border: none; padding: 4px; border-radius: 4px; cursor: pointer;" data-i18n="update_btn">تحديث</button>
                     </form>
                 </td>
                 <td style="text-align: center;">
-                    <a href="https://wa.me/{{ order[3] }}?text=مرحباً {{ order[2] }}! نتواصل معك من (متجر الأناقة) بخصوص طلبك رقم (%2a{{ order[1] }}%2a). حالة شحنتك الآن هي: {{ order[7] }}" target="_blank" class="admin-wa-btn"><i class="fa-brands fa-whatsapp"></i> محادثة</a>
+                    <a href="https://wa.me/{{ order[3] }}?text=مرحباً {{ order[2] }}! بخصوص طلبك رقم (%2a{{ order[1] }}%2a). الحالة الحالية: {{ order[7] }}" target="_blank" class="admin-wa-btn"><i class="fa-brands fa-whatsapp"></i> رسالة</a>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" style="text-align: center; padding: 30px; color: #777;">لا توجد طلبات مسجلة في المتجر حتى الآن.</td></tr>
+            <tr><td colspan="6" style="text-align: center; padding: 30px; color: #777;" data-i18n="no_orders_admin">لا توجد طلبات حتى الآن.</td></tr>
             {% endfor %}
         </tbody>
     </table>

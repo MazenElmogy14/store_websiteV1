@@ -1,107 +1,97 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="admin-header">
-    <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
+    <h2 data-i18n="admin_dashboard_title"><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
     <div class="admin-nav-tabs">
-        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
-        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}"><i class="fa-solid fa-tags"></i> المنتجات والمخزون</a>
-        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
-        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}" data-i18n="admin_tab_orders"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
+        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}" data-i18n="admin_tab_products"><i class="fa-solid fa-tags"></i> المنتجات والمخزون</a>
+        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}" data-i18n="admin_tab_categories"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
+        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}" data-i18n="admin_tab_coupons"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
     </div>
 </div>
 
 <div class="auth-card" style="max-width: 900px; margin: 0 auto 30px; width: 100%;">
-    <h3 style="color: var(--primary-color); margin-bottom: 20px;"><i class="fa-solid fa-wand-magic-sparkles"></i> إنشاء كود خصم متقدم (Advanced Promo Code)</h3>
+    <h3 style="color: var(--primary-color); margin-bottom: 20px;" data-i18n="add_coupon_title"><i class="fa-solid fa-wand-magic-sparkles"></i> إضافة كوبون جديد (Advanced Promo Code)</h3>
     <form action="{{ url_for('admin_coupons') }}" method="POST">
         
-        <!-- إعدادات الكود الأساسية -->
         <div class="form-row">
             <div class="form-group">
-                <label>كود الخصم * (مثال: KICK50)</label>
+                <label data-i18n="coupon_code_label">كود الكوبون * (مثال: KICK50)</label>
                 <input type="text" name="code" required style="text-transform: uppercase;">
             </div>
             <div class="form-group">
-                <label>نوع الخصم وقيمته *</label>
+                <label data-i18n="discount_value_label">قيمة الخصم *</label>
                 <div style="display: flex; gap: 5px;">
                     <select name="discount_type" style="width: auto;">
-                        <option value="percent">نسبة (%)</option>
-                        <option value="fixed">مبلغ ثابت (ج.م)</option>
+                        <option value="percent" data-i18n="discount_percent">نسبة مئوية (%)</option>
+                        <option value="fixed" data-i18n="discount_fixed">مبلغ ثابت (ج.م)</option>
                     </select>
-                    <input type="number" step="0.5" name="discount_value" required placeholder="مثال: 15" style="flex-grow: 1;">
+                    <input type="number" step="0.5" name="discount_value" required placeholder="15" style="flex-grow: 1;">
                 </div>
             </div>
         </div>
-
         <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
-
-        <!-- القيود الزمنية -->
+        
         <div class="form-row">
             <div class="form-group">
-                <label><i class="fa-solid fa-calendar-check"></i> يبدأ من (تاريخ ووقت)</label>
+                <label><i class="fa-solid fa-calendar-check"></i> <span data-i18n="start_date_label">تاريخ بدء التفعيل (اختياري)</span></label>
                 <input type="datetime-local" name="start_date">
             </div>
             <div class="form-group">
-                <label><i class="fa-solid fa-calendar-xmark"></i> ينتهي في (تاريخ ووقت)</label>
+                <label><i class="fa-solid fa-calendar-xmark"></i> <span data-i18n="expiry_date_label">تاريخ الانتهاء (اختياري)</span></label>
                 <input type="datetime-local" name="expiry_date">
             </div>
         </div>
-
         <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <label><i class="fa-solid fa-calendar-week"></i> أيام عمل الكوبون (اتركها فارغة ليعمل طوال الأسبوع)</label>
+            <label><i class="fa-solid fa-calendar-week"></i> <span data-i18n="valid_days_label">أيام الأسبوع المسموحة (اختياري)</span></label>
             <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; font-weight: bold;">
-                <label><input type="checkbox" name="valid_days" value="5"> السبت</label>
-                <label><input type="checkbox" name="valid_days" value="6"> الأحد</label>
-                <label><input type="checkbox" name="valid_days" value="0"> الإثنين</label>
-                <label><input type="checkbox" name="valid_days" value="1"> الثلاثاء</label>
-                <label><input type="checkbox" name="valid_days" value="2"> الأربعاء</label>
-                <label><input type="checkbox" name="valid_days" value="3"> الخميس</label>
-                <label><input type="checkbox" name="valid_days" value="4"> الجمعة</label>
+                <label><input type="checkbox" name="valid_days" value="6"> <span data-i18n="day_sun">الأحد</span></label>
+                <label><input type="checkbox" name="valid_days" value="0"> <span data-i18n="day_mon">الإثنين</span></label>
+                <label><input type="checkbox" name="valid_days" value="1"> <span data-i18n="day_tue">الثلاثاء</span></label>
+                <label><input type="checkbox" name="valid_days" value="2"> <span data-i18n="day_wed">الأربعاء</span></label>
+                <label><input type="checkbox" name="valid_days" value="3"> <span data-i18n="day_thu">الخميس</span></label>
+                <label><input type="checkbox" name="valid_days" value="4"> <span data-i18n="day_fri">الجمعة</span></label>
+                <label><input type="checkbox" name="valid_days" value="5"> <span data-i18n="day_sat">السبت</span></label>
             </div>
         </div>
-
         <hr style="border: none; border-top: 1px dashed #ccc; margin: 15px 0;">
-
-        <!-- قيود الاستهداف والحد الأدنى -->
+        
         <div class="form-row">
             <div class="form-group">
-                <label><i class="fa-solid fa-money-bill-wave"></i> الحد الأدنى للفاتورة (ج.م)</label>
-                <input type="number" step="1" name="min_order_value" value="0" placeholder="مثال: 500">
-                <small style="color: #777;">0 تعني لا يوجد حد أدنى.</small>
+                <label><i class="fa-solid fa-money-bill-wave"></i> <span data-i18n="min_order_label">الحد الأدنى للطلب (اختياري)</span></label>
+                <input type="number" step="1" name="min_order_value" value="0" placeholder="500">
+                <small style="color: #777;" data-i18n="min_order_hint">0 يعني بدون حد أدنى.</small>
             </div>
-            
             <div class="form-group">
-                <label><i class="fa-solid fa-bullseye"></i> استهداف الخصم (أين يُطبق؟)</label>
+                <label><i class="fa-solid fa-bullseye"></i> <span data-i18n="target_label">تطبيق الخصم على (اختياري)</span></label>
                 <select name="target_type" id="target_type" onchange="toggleTargetDivs()">
-                    <option value="all">على إجمالي الفاتورة (جميع المنتجات)</option>
-                    <option value="category">على تصنيف / قسم محدد فقط</option>
-                    <option value="product">على منتج واحد محدد فقط</option>
+                    <option value="all" data-i18n="target_all">كل المنتجات (الافتراضي)</option>
+                    <option value="category" data-i18n="target_category">تصنيف محدد</option>
+                    <option value="product" data-i18n="target_product">منتج محدد</option>
                 </select>
             </div>
         </div>
-
-        <!-- قوائم اختيار الاستهداف المختفية -->
+        
         <div class="form-group" id="div_category" style="display: none; background: #e3f2fd; padding: 15px; border-radius: 6px;">
-            <label>اختر التصنيف المشمول بالخصم:</label>
+            <label data-i18n="target_cat_select">اختر التصنيف:</label>
             <select name="target_category">
                 {% for cat in categories %}
                     <option value="{{ cat[0] }}">{{ cat[1] }}</option>
                 {% endfor %}
             </select>
         </div>
-
         <div class="form-group" id="div_product" style="display: none; background: #e8f5e9; padding: 15px; border-radius: 6px;">
-            <label>اختر المنتج المشمول بالخصم:</label>
+            <label data-i18n="target_prod_select">اختر المنتج:</label>
             <select name="target_product">
                 {% for p in products %}
                     <option value="{{ p[0] }}">{{ p[1] }}</option>
                 {% endfor %}
             </select>
         </div>
-
-        <button type="submit" class="submit-btn" style="background: var(--accent-color); font-size: 1.15rem;"><i class="fa-solid fa-check-double"></i> حفظ وتفعيل الكوبون الذكي</button>
+        
+        <button type="submit" class="submit-btn" style="background: var(--accent-color); font-size: 1.15rem;"><i class="fa-solid fa-check-double"></i> <span data-i18n="add_coupon_btn">إضافة الكوبون</span></button>
     </form>
 </div>
-
 <script>
     function toggleTargetDivs() {
         const type = document.getElementById("target_type").value;
@@ -110,17 +100,17 @@
     }
 </script>
 
-<h3 style="margin-bottom: 15px;">قائمة الكوبونات النشطة والسابقة</h3>
+<h3 style="margin-bottom: 15px;" data-i18n="current_coupons">الكوبونات الحالية</h3>
 <div class="admin-table-wrapper">
     <table class="admin-table">
         <thead>
             <tr>
-                <th>كود الخصم</th>
-                <th>القيمة</th>
-                <th>الاستهداف</th>
-                <th>الحد الأدنى</th>
-                <th>الصلاحية</th>
-                <th>إجراء</th>
+                <th data-i18n="table_coupon_code">الكود</th>
+                <th data-i18n="table_discount">الخصم</th>
+                <th data-i18n="table_target">الهدف</th>
+                <th data-i18n="table_min_order">الحد الأدنى</th>
+                <th data-i18n="table_validity">الصلاحية</th>
+                <th data-i18n="table_action">إجراء</th>
             </tr>
         </thead>
         <tbody>
@@ -129,30 +119,34 @@
                 <td><strong style="color: #e67e22; font-size: 1.1rem; letter-spacing: 1px;">{{ coupon[1] }}</strong></td>
                 <td>
                     {% if coupon[2] == 'percent' %}
-                        <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight: bold;">خصم {{ coupon[3] }}%</span>
+                        <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight: bold;">{{ coupon[3] }}%</span>
                     {% else %}
-                        <span style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-weight: bold;">خصم {{ coupon[3] }} ج.م</span>
+                        <span style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-weight: bold;">{{ coupon[3] }}</span>
                     {% endif %}
                 </td>
                 <td style="font-size: 0.85rem;">
-                    {% if coupon[7] == 'all' %}الكل
-                    {% elif coupon[7] == 'category' %}قسم #{{ coupon[8] }}
-                    {% else %}منتج #{{ coupon[8] }}{% endif %}
+                    {% if coupon[7] == 'all' %}
+                        <span data-i18n="target_all">كل المنتجات</span>
+                    {% elif coupon[7] == 'category' %}
+                        <span data-i18n="target_category">تصنيف</span> #{{ coupon[8] }}
+                    {% else %}
+                        <span data-i18n="target_product">منتج</span> #{{ coupon[8] }}
+                    {% endif %}
                 </td>
-                <td>{{ coupon[9] }} ج.م</td>
+                <td>{{ coupon[9] }}</td>
                 <td style="direction: ltr; font-size: 0.8rem; text-align: center;">
-                    {% if coupon[4] %}<span style="color:#27ae60;">م: {{ coupon[4].replace('T', ' ') }}</span><br>{% endif %}
-                    {% if coupon[5] %}<span style="color:#e74c3c;">إ: {{ coupon[5].replace('T', ' ') }}</span>{% endif %}
-                    {% if not coupon[4] and not coupon[5] %}دائم{% endif %}
+                    {% if coupon[4] %}<span style="color:#27ae60;"><span data-i18n="starts">يبدأ:</span> {{ coupon[4].replace('T', ' ') }}</span><br>{% endif %}
+                    {% if coupon[5] %}<span style="color:#e74c3c;"><span data-i18n="expires">ينتهي:</span> {{ coupon[5].replace('T', ' ') }}</span>{% endif %}
+                    {% if not coupon[4] and not coupon[5] %} <span data-i18n="unlimited">غير محدود</span> {% endif %}
                 </td>
                 <td style="text-align: center;">
-                    <form action="{{ url_for('delete_coupon', coupon_id=coupon[0]) }}" method="POST" onsubmit="return confirm('حذف هذا الكوبون نهائياً؟');">
-                        <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> حذف</button>
+                    <form action="{{ url_for('delete_coupon', coupon_id=coupon[0]) }}" method="POST" onsubmit="return confirm('تأكيد الحذف؟');">
+                        <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> <span data-i18n="delete_btn">حذف</span></button>
                     </form>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="6" style="text-align: center; padding: 20px;">لا يوجد كوبونات.</td></tr>
+            <tr><td colspan="6" style="text-align: center; padding: 20px;" data-i18n="no_coupons">لا توجد كوبونات.</td></tr>
             {% endfor %}
         </tbody>
     </table>

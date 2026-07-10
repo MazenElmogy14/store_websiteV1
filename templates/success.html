@@ -1,29 +1,25 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="success-box">
     <i class="fa-regular fa-circle-check success-icon" style="color: var(--accent-color);"></i>
-    <h2>شكراً لك يا {{ name }}! 🎉</h2>
-    <p style="font-size: 1.1rem; margin-top: 10px;">تم تسجيل طلبك بنجاح في النظام وجاري تجهيزه للشحن.</p>
+    <h2><span data-i18n="success_title">تم استلام طلبك بنجاح!</span> ({{ name }})</h2>
+    <p style="font-size: 1.1rem; margin-top: 10px;" data-i18n="success_msg">سنتواصل معك قريباً لتأكيد الطلب.</p>
     
     <div style="background: #f8f9fa; border: 2px dashed #ccc; padding: 15px; margin: 20px auto; max-width: 400px; border-radius: 8px;">
-        <span style="display: block; color: #666; font-size: 0.9rem;">رقم تتبع الشحنة الخاص بك:</span>
+        <span style="display: block; color: #666; font-size: 0.9rem;" data-i18n="tracking_code_label">كود تتبع طلبك هو:</span>
         <strong style="font-size: 1.6rem; color: var(--primary-color); letter-spacing: 2px;">{{ tracking_code }}</strong>
     </div>
-
-    <p style="color: #666; font-size: 0.95rem;">يمكنك استخدام هذا الرقم أو رقم هاتفك لمتابعة حالة شحنتك في أي وقت.</p>
     
     <div style="display: flex; gap: 15px; justify-content: center; margin-top: 25px; flex-wrap: wrap;">
         <a href="{{ url_for('track_order') }}" class="add-to-cart-btn" style="text-decoration: none; padding: 12px 25px; font-size: 1.05rem;">
-            <i class="fa-solid fa-truck-fast"></i> تتبع حالة شحنتي الآن
+            <i class="fa-solid fa-truck-fast"></i> <span data-i18n="track_now_btn">تتبع الطلب الآن</span>
         </a>
         <a href="{{ url_for('index') }}" class="add-to-cart-btn" style="background: #6c757d; text-decoration: none; padding: 12px 25px; font-size: 1.05rem;">
-            العودة للمتجر
+            <span data-i18n="continue_shopping">تصفح المنتجات</span>
         </a>
     </div>
 </div>
-
 <script>
-    // تفريغ السلة من المتصفح بعد إتمام الطلب بنجاح
     localStorage.removeItem("salla");
 </script>
 {% endblock %}

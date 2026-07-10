@@ -1,43 +1,44 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="auth-card">
-    <h2><i class="fa-solid fa-user-plus"></i> إنشاء حساب جديد</h2>
-    <p class="form-hint">سجل معنا لتسهيل عملية طلب المنتجات وتوصيلها مستقبلاً.</p>
+    <h2 data-i18n="register_title"><i class="fa-solid fa-user-plus"></i> إنشاء حساب جديد</h2>
+    <p class="form-hint" data-i18n="register_hint">انضم إلينا الآن للتمتع بتجربة تسوق أسرع وعروض حصرية.</p>
 
     <form action="{{ url_for('register') }}" method="POST">
         <div class="form-group">
-            <label>الاسم الكامل *</label>
-            <input type="text" name="name" required placeholder="أدخل اسمك الكريم">
+            <label data-i18n="full_name_label">الاسم بالكامل *</label>
+            <input type="text" name="name" required data-i18n="full_name_placeholder" placeholder="الاسم الثلاثي">
         </div>
         
         <div class="form-group">
-            <label>البريد الإلكتروني *</label>
+            <label data-i18n="email_label">البريد الإلكتروني *</label>
             <input type="email" name="email" required placeholder="example@mail.com">
         </div>
 
         <div class="form-group">
-            <label>كلمة المرور *</label>
-            <input type="password" name="password" required placeholder="••••••••">
+            <label data-i18n="password_label">كلمة المرور *</label>
+            <input type="password" name="password" required data-i18n="password_placeholder" placeholder="أدخل كلمة مرور قوية">
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label>رقم الهاتف للتواصل *</label>
+                <label data-i18n="phone_label">رقم الهاتف *</label>
                 <input type="tel" name="phone" required placeholder="مثال: 01012345678">
             </div>
             <div class="form-group">
-                <label>رقم الواتساب (لإتمام الطلبات) *</label>
+                <label data-i18n="whatsapp_label">رقم الواتساب (أساسي) *</label>
                 <input type="tel" name="whatsapp" required placeholder="مثال: 01012345678">
             </div>
         </div>
 
         <div class="form-group">
-            <label>عنوان التوصيل المعتاد (المدينة - المنطقة - الشارع - رقم العقار)</label>
-            <textarea name="address" rows="3" placeholder="اكتب تفاصيل عنوانك لتسهيل الشحن السريع..."></textarea>
+            <label data-i18n="address_label">العنوان بالتفصيل (اختياري)</label>
+            <textarea name="address" rows="3" data-i18n="address_placeholder" placeholder="المحافظة، المدينة، الشارع..."></textarea>
         </div>
 
-        <button type="submit" class="submit-btn"><i class="fa-solid fa-check"></i> تسجيل حساب الآن</button>
+        <button type="submit" class="submit-btn"><i class="fa-solid fa-check"></i> <span data-i18n="register_btn_text">إنشاء حساب</span></button>
     </form>
-    <p class="auth-switch">لديك حساب بالفعل؟ <a href="{{ url_for('login') }}">سجل دخولك هنا</a></p>
+
+    <p class="auth-switch"><span data-i18n="have_account_msg">لديك حساب بالفعل؟</span> <a href="{{ url_for('login') }}" data-i18n="login_here_link">سجل دخولك من هنا</a></p>
 </div>
 {% endblock %}

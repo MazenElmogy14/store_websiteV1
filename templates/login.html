@@ -1,21 +1,22 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="auth-card">
-    <h2><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</h2>
+    <h2 data-i18n="login_title"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول</h2>
     
     <form action="{{ url_for('login') }}" method="POST">
         <div class="form-group">
-            <label>البريد الإلكتروني</label>
+            <label data-i18n="email_label">البريد الإلكتروني</label>
             <input type="email" name="email" required placeholder="example@mail.com">
         </div>
         
         <div class="form-group">
-            <label>كلمة المرور</label>
-            <input type="password" name="password" required placeholder="••••••••">
+            <label data-i18n="password_label">كلمة المرور</label>
+            <input type="password" name="password" required data-i18n="password_placeholder" placeholder="أدخل كلمة المرور">
         </div>
-
-        <button type="submit" class="submit-btn"><i class="fa-solid fa-lock-open"></i> دخول</button>
+        
+        <button type="submit" class="submit-btn"><i class="fa-solid fa-lock-open"></i> <span data-i18n="login_btn_text">دخول</span></button>
     </form>
-    <p class="auth-switch">ليس لديك حساب بعد؟ <a href="{{ url_for('register') }}">أنشئ حسابك الآن</a></p>
+    
+    <p class="auth-switch"><span data-i18n="no_account_msg">ليس لديك حساب؟</span> <a href="{{ url_for('register') }}" data-i18n="register_now_link">سجل الآن</a></p>
 </div>
 {% endblock %}

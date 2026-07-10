@@ -1,38 +1,35 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="admin-header">
-    <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
+    <h2 data-i18n="admin_dashboard_title"><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
     <div class="admin-nav-tabs">
-        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
-        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}"><i class="fa-solid fa-tags"></i> إدارة المنتجات والمخزون</a>
-        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
-        <!-- تمت إضافة رابط الكوبونات هنا لكي لا يختفي -->
-        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
+        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}" data-i18n="admin_tab_orders"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
+        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}" data-i18n="admin_tab_products"><i class="fa-solid fa-tags"></i> المنتجات والمخزون</a>
+        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}" data-i18n="admin_tab_categories"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
+        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}" data-i18n="admin_tab_coupons"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
     </div>
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: start;">
-    <!-- إضافة تصنيف جديد -->
     <div class="auth-card" style="margin: 0; width: 100%;">
-        <h3><i class="fa-solid fa-plus-circle"></i> إضافة تصنيف جديد</h3>
+        <h3 data-i18n="add_new_category"><i class="fa-solid fa-plus-circle"></i> إضافة تصنيف جديد</h3>
         <form action="{{ url_for('admin_categories') }}" method="POST">
             <div class="form-group" style="margin-top: 15px;">
-                <label>اسم التصنيف (مثال: ساعات، ملابس، عطور...)</label>
-                <input type="text" name="name" required placeholder="أدخل الاسم هنا...">
+                <label data-i18n="category_name_label">اسم التصنيف (مثال: ملابس رجالي)</label>
+                <input type="text" name="name" required placeholder="..." data-i18n="category_name_label">
             </div>
-            <button type="submit" class="submit-btn"><i class="fa-solid fa-check"></i> حفظ التصنيف</button>
+            <button type="submit" class="submit-btn"><i class="fa-solid fa-check"></i> <span data-i18n="add_btn">إضافة</span></button>
         </form>
     </div>
 
-    <!-- جدول التصنيفات الحالية -->
     <div>
-        <h3>التصنيفات المتاحة في المتجر</h3>
+        <h3 data-i18n="current_categories">التصنيفات الحالية</h3>
         <table class="admin-table" style="margin-top: 15px;">
             <thead>
                 <tr>
-                    <th>م</th>
-                    <th>اسم التصنيف</th>
-                    <th>إجراءات</th>
+                    <th data-i18n="table_cat_id">المعرف</th>
+                    <th data-i18n="table_cat_name">اسم التصنيف</th>
+                    <th data-i18n="table_action">إجراء</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,14 +38,14 @@
                     <td>{{ cat[0] }}</td>
                     <td><strong>{{ cat[1] }}</strong></td>
                     <td style="text-align: center;">
-                        <form action="{{ url_for('delete_category', cat_id=cat[0]) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا التصنيف؟');">
-                            <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> حذف</button>
+                        <form action="{{ url_for('delete_category', cat_id=cat[0]) }}" method="POST" onsubmit="return confirm('تأكيد الحذف؟');">
+                            <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> <span data-i18n="delete_btn">حذف</span></button>
                         </form>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="3" style="text-align: center; padding: 20px; color: #777;">لا يوجد تصنيفات حالياً.</td>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #777;" data-i18n="no_categories">لا توجد تصنيفات.</td>
                 </tr>
                 {% endfor %}
             </tbody>

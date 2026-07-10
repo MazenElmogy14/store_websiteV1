@@ -1,27 +1,27 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} 
+{% block content %} 
 <div class="cart-page">
-    <h2 class="section-title"><i class="fa-solid fa-cart-shopping"></i> سلة المشتريات (السلة)</h2>
+    <h2 class="section-title"><i class="fa-solid fa-cart-shopping"></i> <span data-i18n="cart_title">عربة التسوق (مراجعة الطلب)</span></h2>
     
-    <!-- حالة السلة عندما تكون فارغة -->
+    <!-- حالة السلة فارغة -->
     <div id="cart-empty" class="empty-state" style="display:none;">
         <i class="fa-solid fa-basket-shopping empty-icon"></i>
-        <p>سلة المشتريات فارغة حالياً.</p>
-        <a href="{{ url_for('index') }}" class="add-to-cart-btn" style="display: inline-block; text-decoration: none; margin-top: 10px;">تصفح الكتالوج والمنتجات</a>
+        <p data-i18n="cart_empty_msg">السلة فارغة حالياً.</p>
+        <a href="{{ url_for('index') }}" class="add-to-cart-btn" style="display: inline-block; text-decoration: none; margin-top: 10px;" data-i18n="continue_shopping">تصفح المنتجات</a>
     </div>
 
-    <!-- محتوى السلة عندما تحتوي على منتجات -->
+    <!-- محتوى السلة -->
     <div id="cart-content" class="cart-layout">
-        <!-- القائمة -->
+        <!-- جدول المنتجات -->
         <div class="cart-items-section">
             <table class="cart-table">
                 <thead>
                     <tr>
-                        <th>المنتج</th>
-                        <th>السعر</th>
-                        <th>الكمية</th>
-                        <th>الإجمالي</th>
-                        <th>حذف</th>
+                        <th data-i18n="table_product">المنتج</th>
+                        <th data-i18n="table_price">السعر</th>
+                        <th data-i18n="table_qty">الكمية</th>
+                        <th data-i18n="table_total">الإجمالي</th>
+                        <th data-i18n="table_action">إجراء</th>
                     </tr>
                 </thead>
                 <tbody id="cart-items-body"></tbody>
@@ -29,79 +29,78 @@
             
             <div class="cart-total" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div>
-                    <h3 style="margin-bottom: 5px;">الإجمالي: <span id="total-price">0</span> ج.م</h3>
+                    <h3 style="margin-bottom: 5px;"><span data-i18n="total_price_label">الإجمالي الفرعي:</span> <span id="total-price">0</span> ج.م</h3>
                     <div id="discount-display-box" style="display: none; color: #27ae60; font-weight: bold; font-size: 1rem;">
-                        <i class="fa-solid fa-tag"></i> الخصم المطبق: -<span id="discount-val">0</span> ج.م
-                        <br><span style="color: #e74c3c; font-size: 1.2rem;">الإجمالي بعد الخصم: <strong id="final-total-val">0</strong> ج.م</span>
+                        <i class="fa-solid fa-tag"></i> <span data-i18n="discount_applied">خصم مطبق:</span> -<span id="discount-val">0</span> ج.م
+                        <br><span style="color: #e74c3c; font-size: 1.2rem;"><span data-i18n="final_total">الإجمالي النهائي:</span> <strong id="final-total-val">0</strong> ج.م</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- نموذج إتمام الطلب والدفع (Checkout Form) -->
+        <!-- نموذج إتمام الطلب (Checkout Form) -->
         <div class="checkout-form-section">
-            <h3>بيانات التوصيل والدفع</h3>
+            <h3 data-i18n="checkout_title">بيانات الاستلام</h3>
             
             {% if current_user.is_authenticated %}
                 <div class="user-logged-badge">
-                    <i class="fa-solid fa-circle-check"></i> تم سحب بياناتك تلقائياً من ملفك الشخصي لتسهيل الطلب، ويمكنك تعديل أي حقل إذا أردت التوصيل لعنوان أو رقم مختلف.
+                    <i class="fa-solid fa-circle-check"></i> <span data-i18n="logged_in_msg">أنت مسجل الدخول، تم سحب بياناتك.</span>
                 </div>
             {% else %}
-                <p class="form-hint">يمكنك <a href="{{ url_for('login') }}">تسجيل الدخول</a> لاستخدام بياناتك السابقة أو المتابعة كزائر وإدخال بياناتك يدوياً.</p>
+                <p class="form-hint"><span data-i18n="login_hint">لتجربة أسرع،</span> <a href="{{ url_for('login') }}" data-i18n="login_link">سجل دخولك الآن</a>.</p>
             {% endif %}
             
             <form action="{{ url_for('checkout') }}" method="POST" id="checkout-form" onsubmit="return prepareCartData()">
                 
-                <!-- مربع كود الخصم (جديد) -->
+                <!-- إدخال الكوبون -->
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; margin-bottom: 20px;">
-                    <label style="color: var(--primary-color); font-weight: bold; display: block; margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> هل لديك كود خصم (كوبون)؟</label>
+                    <label style="color: var(--primary-color); font-weight: bold; display: block; margin-bottom: 8px;"><i class="fa-solid fa-ticket"></i> <span data-i18n="coupon_label">لديك كود خصم؟</span></label>
                     <div style="display: flex; gap: 8px;">
-                        <input type="text" id="coupon_input" placeholder="اكتب الكود هنا..." style="text-transform: uppercase; padding: 10px; border: 1px solid #ccc; border-radius: 6px; flex-grow: 1;">
-                        <button type="button" onclick="applyCoupon()" class="add-to-cart-btn" style="background: #2980b9; padding: 10px 20px; font-size: 0.95rem;">تطبيق</button>
+                        <input type="text" id="coupon_input" data-i18n="coupon_placeholder" placeholder="أدخل الكود هنا..." style="text-transform: uppercase; padding: 10px; border: 1px solid #ccc; border-radius: 6px; flex-grow: 1;">
+                        <button type="button" onclick="applyCoupon()" class="add-to-cart-btn" style="background: #2980b9; padding: 10px 20px; font-size: 0.95rem;" data-i18n="apply_btn">تطبيق</button>
                     </div>
                     <span id="coupon-msg" style="display: block; font-size: 0.85rem; margin-top: 6px; font-weight: bold;"></span>
                 </div>
 
                 <div class="form-group">
-                    <label for="full_name"><i class="fa-solid fa-user"></i> الاسم الكامل *</label>
-                    <input type="text" id="full_name" name="full_name" required 
-                           value="{{ current_user.name if current_user.is_authenticated else '' }}" 
-                           placeholder="مثال: أحمد محمد">
+                    <label for="full_name"><i class="fa-solid fa-user"></i> <span data-i18n="full_name_label">الاسم بالكامل *</span></label>
+                    <input type="text" id="full_name" name="full_name" required
+                            value="{{ current_user.name if current_user.is_authenticated else '' }}"
+                            data-i18n="full_name_placeholder" placeholder="الاسم الثلاثي">
                 </div>
-
+                
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="phone_number"><i class="fa-brands fa-whatsapp"></i> رقم الهاتف (واتساب) *</label>
-                        <input type="tel" id="phone_number" name="phone_number" required 
-                               value="{{ current_user.whatsapp or current_user.phone if current_user.is_authenticated else '' }}" 
-                               placeholder="مثال: 01012345678" pattern="^[0-9\-\+\s\(\)]{8,15}$" 
-                               title="يرجى إدخال رقم هاتف صحيح يحتوي على أرقام فقط">
+                        <label for="phone_number"><i class="fa-brands fa-whatsapp"></i> <span data-i18n="whatsapp_label">رقم الواتساب (أساسي) *</span></label>
+                        <input type="tel" id="phone_number" name="phone_number" required
+                                value="{{ current_user.whatsapp or current_user.phone if current_user.is_authenticated else '' }}"
+                                placeholder="مثال: 01012345678" pattern="^[0-9\-\+\s\(\)]{8,15}$"
+                                title="يرجى إدخال رقم هاتف صحيح">
                     </div>
-
                     <div class="form-group">
-                        <label for="alt_phone"><i class="fa-solid fa-phone"></i> رقم هاتف احتياطي (اختياري)</label>
-                        <input type="tel" id="alt_phone" name="alt_phone" 
-                               value="{{ current_user.phone if current_user.is_authenticated and current_user.phone != current_user.whatsapp else '' }}" 
-                               placeholder="رقم آخر للتواصل عند الحاجة">
+                        <label for="alt_phone"><i class="fa-solid fa-phone"></i> <span data-i18n="alt_phone_label">رقم بديل (اختياري)</span></label>
+                        <input type="tel" id="alt_phone" name="alt_phone"
+                                value="{{ current_user.phone if current_user.is_authenticated and current_user.phone != current_user.whatsapp else '' }}"
+                                data-i18n="alt_phone_placeholder" placeholder="رقم هاتف آخر للتواصل">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="address"><i class="fa-solid fa-location-dot"></i> عنوان التوصيل *</label>
-                    <textarea id="address" name="address" rows="3" required 
-                              placeholder="المدينة، المنطقة، اسم الشارع، رقم العقار، والدور">{{ current_user.address if current_user.is_authenticated else '' }}</textarea>
+                    <label for="address"><i class="fa-solid fa-location-dot"></i> <span data-i18n="address_label">العنوان بالتفصيل *</span></label>
+                    <textarea id="address" name="address" rows="3" required
+                               data-i18n="address_placeholder" placeholder="المحافظة، المدينة، الشارع، رقم العمارة والشقة">{{ current_user.address if current_user.is_authenticated else '' }}</textarea>
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="order_notes"><i class="fa-regular fa-comment"></i> ملاحظات إضافية للتاجر أو مندوب الشحن (اختياري)</label>
-                    <textarea id="order_notes" name="order_notes" rows="2" placeholder="مثال: يرجى الاتصال قبل الوصول بساعة، أو تغليف المنتج كهدية..."></textarea>
+                    <label for="order_notes"><i class="fa-regular fa-comment"></i> <span data-i18n="notes_label">ملاحظات إضافية (اختياري)</span></label>
+                    <textarea id="order_notes" name="order_notes" rows="2" data-i18n="notes_placeholder" placeholder="أي تفاصيل خاصة بالشحن أو الطلب..."></textarea>
                 </div>
 
                 <input type="hidden" name="cart_data" id="cart_data_input">
                 <input type="hidden" name="applied_coupon" id="applied_coupon_input">
-
+                
                 <button type="submit" class="whatsapp-submit-btn">
-                    <i class="fa-brands fa-whatsapp"></i> إرسال وتأكيد الطلب الآن
+                    <i class="fa-brands fa-whatsapp"></i> <span data-i18n="checkout_btn">تأكيد الطلب وإرسال عبر واتساب</span>
                 </button>
             </form>
         </div>
