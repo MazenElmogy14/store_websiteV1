@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المبرمج</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style> 
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; } 
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">🛠️ Developer Dashboard</span>
+            <a href="/logout" class="btn btn-outline-light btn-sm">تسجيل الخروج</a>
+        </div>
+    </nav>
+    <div class="container pb-5">
+        <!-- رسائل النظام -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- قسم التحكم في الخصائص -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">التحكم في خصائص الموقع بالكامل</div>
+            <div class="card-body">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الخاصية</th>
+                            <th>الحالة الحالية</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-danger fw-bold">حالة الموقع بالكامل (Suspension)</td>
+                            <td>
+                                {% if config.is_active %}
+                                    <span class="badge bg-success">شغال</span>
+                                {% else %}
+                                    <span class="badge bg-danger">موقوف</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/superadmin/toggle/is_active" class="btn btn-sm btn-dark">تغيير الحالة</a></td>
+                        </tr>
+                        <tr>
+                            <td>نظام المنتجات والعرض</td>
+                            <td>
+                                {% if config.feature_products %}
+                                    <span class="badge bg-success">مفعل</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مغلق</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/superadmin/toggle/feature_products" class="btn btn-sm btn-outline-primary">تغيير</a></td>
+                        </tr>
+                        <tr>
+                            <td>سلة المشتريات والطلب (Checkout)</td>
+                            <td>
+                                {% if config.feature_cart %}
+                                    <span class="badge bg-success">مفعل</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مغلق</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/superadmin/toggle/feature_cart" class="btn btn-sm btn-outline-primary">تغيير</a></td>
+                        </tr>
+                        <tr>
+                            <td>نظام الكوبونات والخصومات</td>
+                            <td>
+                                {% if config.feature_coupons %}
+                                    <span class="badge bg-success">مفعل</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مغلق</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/superadmin/toggle/feature_coupons" class="btn btn-sm btn-outline-primary">تغيير</a></td>
+                        </tr>
+                        <tr>
+                            <td>تتبع الطلبات</td>
+                            <td>
+                                {% if config.feature_tracking %}
+                                    <span class="badge bg-success">مفعل</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">مغلق</span>
+                                {% endif %}
+                            </td>
+                            <td><a href="/superadmin/toggle/feature_tracking" class="btn btn-sm btn-outline-primary">تغيير</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="mt-4 text-center">
+                    <a href="/" class="btn btn-secondary" target="_blank">الذهاب للموقع</a>
+                    <a href="/admin" class="btn btn-info text-white" target="_blank">لوحة تحكم مدير المتجر</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم التحكم في الـ IP (القائمة البيضاء) -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">🛡️ إدارة الأجهزة المستثناة من الإيقاف (IP Whitelist)</div>
+            <div class="card-body">
+                <p class="text-muted small">عند إيقاف الموقع بالكامل، الأجهزة التي تمتلك العناوين الموجودة بالأسفل ستتمكن من تصفح الموقع كأنه يعمل بشكل طبيعي.</p>
+                
+                <form action="/superadmin/add_ip" method="POST" class="row g-2 mb-4 align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label small">عنوان الـ IP (جهازك الحالي مكتوب تلقائياً)</label>
+                        <input type="text" name="ip_address" class="form-control" value="{{ current_ip }}" required dir="ltr">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small">وصف (مثال: جهازي الشخصي، موبايل المدير)</label>
+                        <input type="text" name="description" class="form-control" placeholder="الوصف (اختياري)">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small d-block">&nbsp;</label>
+                        <button type="submit" class="btn btn-success w-100">إضافة للقائمة البيضاء</button>
+                    </div>
+                </form>
+
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>عنوان الـ IP</th>
+                            <th>الوصف</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ip in ips %}
+                        <tr>
+                            <td dir="ltr" class="fw-bold text-primary">{{ ip.ip_address }}</td>
+                            <td>{{ ip.description or 'بدون وصف' }}</td>
+                            <td>
+                                <a href="/superadmin/delete_ip/{{ ip.id }}" class="btn btn-sm btn-danger" onclick="return confirm('هل تريد حذف هذا الجهاز؟');">حذف</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-muted py-3">لا توجد أي أجهزة مستثناة حالياً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

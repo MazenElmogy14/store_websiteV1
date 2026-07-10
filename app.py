@@ -6,444 +6,664 @@ import string
 import csv
 import io
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, abort, Response, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, abort, Response, jsonify, g
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.secret_key = "super_secret_store_key_for_sessions"
+
+# إعدادات رفع الملفات
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-MERCHANT_PHONE = "201234567890"
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# إعدادات قاعدة البيانات
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'store.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# إعدادات تسجيل الدخول
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = ""
+login_manager.login_message = "يرجى تسجيل الدخول للوصول لهذه الصفحة"
 login_manager.login_message_category = "warning"
 
-class User(UserMixin):
-    def __init__(self, id, name, email, phone, whatsapp, address, is_admin=0):
-        self.id = id
-        self.name = name
-        self.email = email
-        self.phone = phone
-        self.whatsapp = whatsapp
-        self.address = address
-        self.is_admin = bool(is_admin)
+# ==========================================
+# هيكلة الجداول (Models) للمتجر الواحد
+# ==========================================
+class SystemConfig(db.Model):
+    __tablename__ = 'system_config'
+    id = db.Column(db.Integer, primary_key=True)
+    is_active = db.Column(db.Boolean, default=True) 
+    feature_cart = db.Column(db.Boolean, default=True)
+    feature_coupons = db.Column(db.Boolean, default=True)
+    feature_tracking = db.Column(db.Boolean, default=True)
+    feature_products = db.Column(db.Boolean, default=True)
 
-def get_db_connection():
-    conn = sqlite3.connect("store.db", timeout=20.0)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA busy_timeout=20000;")
-    return conn
+class WhitelistedIP(db.Model):
+    __tablename__ = 'whitelisted_ips'
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(50), unique=True, nullable=False)
+    description = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    phone = db.Column(db.String(20))
+    whatsapp = db.Column(db.String(20))
+    address = db.Column(db.Text)
+    is_admin = db.Column(db.Boolean, default=False)
+    is_superadmin = db.Column(db.Boolean, default=False)
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+class Product(db.Model):
+    __tablename__ = 'products'
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    name = db.Column(db.String(150), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    discount_price = db.Column(db.Float, default=0)
+    image = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    discount_end_date = db.Column(db.String(50))
+    stock = db.Column(db.Integer, default=10)
+
+class Order(db.Model):
+    __tablename__ = 'orders'
+    id = db.Column(db.Integer, primary_key=True)
+    tracking_code = db.Column(db.String(50), unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    customer_name = db.Column(db.String(100), nullable=False)
+    customer_phone = db.Column(db.String(20), nullable=False)
+    customer_address = db.Column(db.Text, nullable=False)
+    order_details = db.Column(db.Text, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String(50), default='قيد المراجعة')
+    cart_items_json = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Coupon(db.Model):
+    __tablename__ = 'coupons'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)
+    discount_type = db.Column(db.String(20), nullable=False)
+    discount_value = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.String(50))
+    expiry_date = db.Column(db.String(50))
+    valid_days = db.Column(db.String(100))
+    target_type = db.Column(db.String(20), default='all')
+    target_id = db.Column(db.Integer)
+    min_order_value = db.Column(db.Float, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+
+class Setting(db.Model):
+    __tablename__ = 'settings'
+    id = db.Column(db.Integer, primary_key=True)
+    setting_key = db.Column(db.String(50), unique=True, nullable=False)
+    setting_value = db.Column(db.Text)
+
+# ==========================================
+# تهيئة قاعدة البيانات 
+# ==========================================
+def setup_database():
+    with app.app_context():
+        db.create_all()
+        
+        if not SystemConfig.query.first():
+            db.session.add(SystemConfig())
+            db.session.commit()
+
+        if not User.query.filter_by(is_superadmin=True).first():
+            super_admin = User(
+                name="Developer",
+                email="dev@admin.com",
+                password=generate_password_hash("dev123"), 
+                is_admin=True,
+                is_superadmin=True
+            )
+            db.session.add(super_admin)
+            
+        if not User.query.filter_by(email="admin@store.com").first():
+            store_admin = User(
+                name="المدير العام",
+                email="admin@store.com",
+                password=generate_password_hash("admin123"),
+                phone="01000000000",
+                address="الإدارة",
+                is_admin=True
+            )
+            db.session.add(store_admin)
+
+        if Setting.query.count() == 0:
+            defaults = [("whatsapp", "201234567890"), ("phone", "201234567890"), ("instagram", "#"), ("tiktok", "#"), ("facebook", "#")]
+            for key, val in defaults:
+                db.session.add(Setting(setting_key=key, setting_value=val))
+                
+        db.session.commit()
+
+setup_database()
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name, email, phone, whatsapp, address, is_admin FROM users WHERE id = ?", (user_id,))
-    u = cursor.fetchone()
-    conn.close()
-    if u: return User(id=u[0], name=u[1], email=u[2], phone=u[3], whatsapp=u[4], address=u[5], is_admin=u[6])
-    return None
+    return User.query.get(int(user_id))
 
 def generate_tracking_code():
     return "TRK-" + ''.join(random.choices(string.digits, k=5))
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, price REAL NOT NULL, discount_price REAL DEFAULT 0, image TEXT NOT NULL, description TEXT, category_id INTEGER, discount_end_date TEXT, stock INTEGER DEFAULT 10, FOREIGN KEY(category_id) REFERENCES categories(id))")
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, phone TEXT, whatsapp TEXT, address TEXT, is_admin INTEGER DEFAULT 0)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, tracking_code TEXT UNIQUE, user_id INTEGER, customer_name TEXT NOT NULL, customer_phone TEXT NOT NULL, customer_address TEXT NOT NULL, order_details TEXT NOT NULL, total_price REAL NOT NULL, status TEXT DEFAULT ' ', cart_items_json TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS coupons (id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT UNIQUE NOT NULL, discount_type TEXT NOT NULL, discount_value REAL NOT NULL, start_date TEXT, expiry_date TEXT, valid_days TEXT, target_type TEXT DEFAULT 'all', target_id INTEGER, min_order_value REAL DEFAULT 0, is_active INTEGER DEFAULT 1)")
-    
-    # إنشاء جدول الإعدادات
-    cursor.execute("CREATE TABLE IF NOT EXISTS settings (setting_key TEXT PRIMARY KEY, setting_value TEXT)")
-    
-    # إدخال الإعدادات الافتراضية
-    cursor.execute("SELECT COUNT(*) FROM settings")
-    if cursor.fetchone()[0] == 0:
-        defaults = [
-            ("whatsapp", "201234567890"),
-            ("phone", "201234567890"),
-            ("instagram", "#"),
-            ("tiktok", "#"),
-            ("facebook", "#")
-        ]
-        cursor.executemany("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", defaults)
-        
-    try: cursor.execute("ALTER TABLE products ADD COLUMN discount_end_date TEXT")
-    except sqlite3.OperationalError: pass
-    try: cursor.execute("ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 10")
-    except sqlite3.OperationalError: pass
-    try: cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
-    except sqlite3.OperationalError: pass
-    for col, col_type in [("tracking_code", "TEXT UNIQUE"), ("customer_address", "TEXT"), ("status", "TEXT DEFAULT ' '"), ("cart_items_json", "TEXT")]:
-        try: cursor.execute(f"ALTER TABLE orders ADD COLUMN {col} {col_type}")
-        except sqlite3.OperationalError: pass
-    for col, col_type in [("start_date", "TEXT"), ("valid_days", "TEXT"), ("target_type", "TEXT DEFAULT 'all'"), ("target_id", "INTEGER"), ("min_order_value", "REAL DEFAULT 0")]:
-        try: cursor.execute(f"ALTER TABLE coupons ADD COLUMN {col} {col_type}")
-        except sqlite3.OperationalError: pass
-             
-    cursor.execute("SELECT COUNT(*) FROM users WHERE email = 'admin@store.com'")
-    if cursor.fetchone()[0] == 0:
-        admin_pass = generate_password_hash("admin123")
-        cursor.execute("INSERT INTO users (name, email, password, phone, whatsapp, address, is_admin) VALUES (?, ?, ?, ?, ?, ?, ?)", ("المدير العام", "admin@store.com", admin_pass, "01000000000", "01000000000", "الإدارة", 1))
-    conn.commit()
-    conn.close()
+def get_client_ip():
+    # لجلب الـ IP الحقيقي في حالة استخدام سيرفرات سحابية أو Proxies
+    if request.headers.getlist("X-Forwarded-For"):
+        return request.headers.getlist("X-Forwarded-For")[0].split(',')[0].strip()
+    return request.remote_addr
 
-init_db()
+# ==========================================
+# Middleware: التحكم الكامل في حالة الموقع والـ IP
+# ==========================================
+@app.before_request
+def check_site_status():
+    config = SystemConfig.query.first()
+    g.config = config
+    
+    # السماح للملفات الثابتة وصفحات تسجيل الدخول ولوحة المبرمج دائمًا
+    if request.path.startswith('/static') or request.path in ['/login', '/logout', '/superadmin'] or request.path.startswith('/superadmin'):
+        return
+
+    # إذا كان الموقع متوقفاً
+    if not config.is_active:
+        client_ip = get_client_ip()
+        is_whitelisted = WhitelistedIP.query.filter_by(ip_address=client_ip).first()
+        
+        # إذا لم يكن الـ IP في القائمة البيضاء، امنع الدخول
+        if not is_whitelisted:
+            return "<h1 style='text-align:center; margin-top:20%; color:red; font-family:sans-serif;'>الموقع متوقف حالياً لأعمال الصيانة أو من قبل الإدارة.</h1>", 403
 
 @app.context_processor
 def inject_settings():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT setting_key, setting_value FROM settings")
-        rows = cursor.fetchall()
-        settings = {row[0]: row[1] for row in rows}
-    except sqlite3.OperationalError:
-        settings = {"whatsapp": "", "phone": "", "instagram": "#", "tiktok": "#", "facebook": "#"}
-    finally:
-        conn.close()
-    return dict(store_settings=settings)
+    settings_query = Setting.query.all()
+    settings = {s.setting_key: s.setting_value for s in settings_query}
+    return dict(store_settings=settings, sys_config=g.config)
 
+# ==========================================
+# لوحة تحكم المبرمج (Super Admin)
+# ==========================================
+@app.route('/superadmin')
+@login_required
+def superadmin_dashboard():
+    if not current_user.is_superadmin: abort(403)
+    ips = WhitelistedIP.query.all()
+    current_ip = get_client_ip()
+    return render_template('superadmin.html', config=g.config, ips=ips, current_ip=current_ip)
+
+@app.route('/superadmin/toggle/<feature_name>')
+@login_required
+def superadmin_toggle(feature_name):
+    if not current_user.is_superadmin: abort(403)
+    config = SystemConfig.query.first()
+    if hasattr(config, feature_name):
+        current_status = getattr(config, feature_name)
+        setattr(config, feature_name, not current_status)
+        db.session.commit()
+        flash(f"تم تعديل الخاصية {feature_name} بنجاح!", "success")
+    return redirect(url_for('superadmin_dashboard'))
+
+@app.route('/superadmin/add_ip', methods=['POST'])
+@login_required
+def superadmin_add_ip():
+    if not current_user.is_superadmin: abort(403)
+    ip_address = request.form.get('ip_address', '').strip()
+    description = request.form.get('description', '').strip()
+    
+    if ip_address:
+        try:
+            db.session.add(WhitelistedIP(ip_address=ip_address, description=description))
+            db.session.commit()
+            flash("تم إضافة عنوان الـ IP للقائمة البيضاء.", "success")
+        except:
+            db.session.rollback()
+            flash("عنوان الـ IP مسجل بالفعل!", "error")
+            
+    return redirect(url_for('superadmin_dashboard'))
+
+@app.route('/superadmin/delete_ip/<int:ip_id>')
+@login_required
+def superadmin_delete_ip(ip_id):
+    if not current_user.is_superadmin: abort(403)
+    ip_entry = WhitelistedIP.query.get_or_404(ip_id)
+    db.session.delete(ip_entry)
+    db.session.commit()
+    flash("تم إزالة عنوان الـ IP من القائمة.", "success")
+    return redirect(url_for('superadmin_dashboard'))
+
+# ==========================================
+# مسارات العميل (Customer Routes)
+# ==========================================
 def calculate_coupon_discount(code, cart_items, total_price):
     if not code: return False, " ", 0, total_price
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT discount_type, discount_value, start_date, expiry_date, valid_days, target_type, target_id, min_order_value, is_active FROM coupons WHERE code = ?", (code,))
-    coupon = cursor.fetchone()
-    if not coupon or not coupon[8]: conn.close(); return False, " !", 0, total_price
-    discount_type, discount_value, start_date, expiry_date, valid_days, target_type, target_id, min_order_value, _ = coupon
+    coupon = Coupon.query.filter_by(code=code).first()
+    if not coupon or not coupon.is_active: return False, "الكوبون غير صالح!", 0, total_price
+    
     now = datetime.now()
     current_time_str = now.strftime('%Y-%m-%dT%H:%M')
     current_day = str(now.weekday())
          
-    if start_date and current_time_str < start_date: conn.close(); return False, " !", 0, total_price
-    if expiry_date and current_time_str > expiry_date: conn.close(); return False, " !", 0, total_price
-    if valid_days and current_day not in valid_days.split(','): conn.close(); return False, " !", 0, total_price
-    if float(total_price) < float(min_order_value): conn.close(); return False, f"  {min_order_value}  !", 0, total_price
+    if coupon.start_date and current_time_str < coupon.start_date: return False, "الكوبون لم يبدأ بعد!", 0, total_price
+    if coupon.expiry_date and current_time_str > coupon.expiry_date: return False, "الكوبون منتهي!", 0, total_price
+    if coupon.valid_days and current_day not in coupon.valid_days.split(','): return False, "الكوبون غير صالح اليوم!", 0, total_price
+    if float(total_price) < float(coupon.min_order_value): return False, f"الحد الأدنى للطلب هو {coupon.min_order_value}!", 0, total_price
          
     eligible_total = 0; applicable = False
     for item in cart_items:
         prod_id = item['id']; qty = int(item['quantity']); price = float(item['price'])
-        if target_type == 'all': eligible_total += (price * qty); applicable = True
-        elif target_type == 'product' and str(prod_id) == str(target_id): eligible_total += (price * qty); applicable = True
-        elif target_type == 'category':
-            cursor.execute("SELECT category_id FROM products WHERE id=?", (prod_id,))
-            res = cursor.fetchone()
-            if res and str(res[0]) == str(target_id): eligible_total += (price * qty); applicable = True
-    conn.close()
+        if coupon.target_type == 'all': eligible_total += (price * qty); applicable = True
+        elif coupon.target_type == 'product' and str(prod_id) == str(coupon.target_id): eligible_total += (price * qty); applicable = True
+        elif coupon.target_type == 'category':
+            prod = Product.query.get(prod_id)
+            if prod and str(prod.category_id) == str(coupon.target_id): eligible_total += (price * qty); applicable = True
          
-    if not applicable or eligible_total == 0: return False, " !", 0, total_price
-    discount_amount = (eligible_total * float(discount_value)) / 100 if discount_type == "percent" else (float(discount_value) if float(discount_value) <= eligible_total else eligible_total)
+    if not applicable or eligible_total == 0: return False, "الكوبون لا يشمل هذه المنتجات!", 0, total_price
+    discount_amount = (eligible_total * float(coupon.discount_value)) / 100 if coupon.discount_type == "percent" else (float(coupon.discount_value) if float(coupon.discount_value) <= eligible_total else eligible_total)
     new_total = float(total_price) - float(discount_amount)
-    return True, f" ! (-{round(discount_amount, 2)}  )", discount_amount, new_total
+    return True, f"تم التطبيق بنجاح! (-{round(discount_amount, 2)})", discount_amount, new_total
 
 @app.route("/api/validate_coupon", methods=["POST"])
 def validate_coupon():
+    if not g.config.feature_coupons:
+        return jsonify({"valid": False, "message": "نظام الكوبونات مغلق حالياً."})
     data = request.get_json()
     is_valid, message, discount_amount, new_total = calculate_coupon_discount(data.get("code", "").strip().upper(), data.get("cart", []), float(data.get("total", 0)))
     return jsonify({"valid": is_valid, "message": message, "discount_amount": round(discount_amount, 2), "new_total": round(new_total, 2)})
 
-@app.route("/api/get_order_items/<tracking_code>")
-def get_order_items(tracking_code):
-    conn = get_db_connection(); cursor = conn.cursor()
-    cursor.execute("SELECT cart_items_json FROM orders WHERE tracking_code = ?", (tracking_code,))
-    res = cursor.fetchone(); conn.close()
-    if res and res[0]: return jsonify({"success": True, "items": json.loads(res[0])})
-    return jsonify({"success": False})
-
 @app.route("/")
 def index():
+    if not g.config.feature_products: 
+        return "<h2 style='text-align:center; margin-top:10%;'>نظام عرض المنتجات مغلق حالياً من قبل المبرمج.</h2>"
+        
     if current_user.is_authenticated and current_user.is_admin and request.args.get('view') != 'store':
-        return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('superadmin_dashboard') if current_user.is_superadmin else url_for('admin_dashboard'))
              
     cat_id = request.args.get("category", type=int)
-    conn = get_db_connection(); cursor = conn.cursor()
-    cursor.execute("SELECT * FROM categories"); categories = cursor.fetchall()
-    query = "SELECT p.id, p.name, p.price, p.discount_price, p.image, p.description, p.category_id, p.discount_end_date, p.stock, c.name as cat_name FROM products p LEFT JOIN categories c ON p.category_id = c.id"
-    if cat_id: cursor.execute(query + " WHERE p.category_id = ? ORDER BY p.id DESC", (cat_id,))
-    else: cursor.execute(query + " ORDER BY p.id DESC")
-    products = cursor.fetchall(); conn.close()
+    categories = Category.query.all()
+    
+    if cat_id:
+        products = Product.query.filter_by(category_id=cat_id).order_by(Product.id.desc()).all()
+    else:
+        products = Product.query.order_by(Product.id.desc()).all()
+        
     return render_template("index.html", products=products, categories=categories, selected_cat=cat_id, current_time=datetime.now().strftime('%Y-%m-%dT%H:%M'))
 
 @app.route("/cart")
 def cart():
-    if current_user.is_authenticated and current_user.is_admin:
-        flash(" .", "warning")
-        return redirect(url_for('admin_dashboard'))
+    if not g.config.feature_cart: return "<h2 style='text-align:center; margin-top:10%;'>خاصية سلة المشتريات والطلب مغلقة حالياً.</h2>"
     return render_template("cart.html")
 
 @app.route("/checkout", methods=["POST"])
 def checkout():
+    if not g.config.feature_cart: abort(403)
     if current_user.is_authenticated and current_user.is_admin: abort(403)
+    
     name = request.form.get("full_name") or (current_user.name if current_user.is_authenticated else None)
     phone = request.form.get("phone_number") or (current_user.whatsapp or current_user.phone if current_user.is_authenticated else None)
     address = request.form.get("address") or (current_user.address if current_user.is_authenticated else "")
     cart_data_str = request.form.get("cart_data")
     coupon_code = request.form.get("applied_coupon", "").strip().upper()
          
-    if not name or not phone or not cart_data_str: flash(" .", "error"); return redirect(url_for("cart"))
+    if not name or not phone or not cart_data_str: flash("البيانات ناقصة.", "error"); return redirect(url_for("cart"))
     cart_items = json.loads(cart_data_str)
-    if not cart_items: flash(" !", "error"); return redirect(url_for("cart"))
+    if not cart_items: flash("السلة فارغة!", "error"); return redirect(url_for("cart"))
          
     total_price = sum(float(item['price']) * int(item['quantity']) for item in cart_items)
     discount_text = ""
-    if coupon_code:
+    
+    if coupon_code and g.config.feature_coupons:
         is_valid, msg, discount_amount, new_total = calculate_coupon_discount(coupon_code, cart_items, total_price)
-        if is_valid: total_price = new_total; discount_text = f"\n |  : {coupon_code} ( : {round(discount_amount, 2)} )"
+        if is_valid: 
+            total_price = new_total
+            discount_text = f"\n | كود الخصم: {coupon_code} ( خصم: {round(discount_amount, 2)} )"
              
-    order_summary_list = [f"  {item['name']} ( : {item['quantity']}) - {float(item['price']) * int(item['quantity'])}  " for item in cart_items]
+    order_summary_list = [f"  {item['name']} ( كمية: {item['quantity']}) - {float(item['price']) * int(item['quantity'])} " for item in cart_items]
     order_details_text = "\n".join(order_summary_list) + discount_text
     tracking_code = generate_tracking_code()
          
-    conn = get_db_connection()
-    cursor = conn.cursor()
-         
     try:
-        cursor.execute("BEGIN IMMEDIATE")
-                 
         for item in cart_items:
             qty = int(item['quantity'])
             prod_id = int(item['id'])
-                         
-            cursor.execute("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?", (qty, prod_id, qty))
-                         
-            if cursor.rowcount == 0:
-                cursor.execute("SELECT stock FROM products WHERE id = ?", (prod_id,))
-                res = cursor.fetchone()
-                rem_stock = res[0] if res else 0
-                                 
-                conn.rollback()
-                flash(f"  '{item['name']}'   ({rem_stock}  .", "error")
+            product = Product.query.get(prod_id)
+            if product and product.stock >= qty:
+                product.stock -= qty
+            else:
+                db.session.rollback()
+                flash(f"كمية '{item['name']}' غير كافية.", "error")
                 return redirect(url_for("cart"))
                 
-        cursor.execute("INSERT INTO orders (tracking_code, user_id, customer_name, customer_phone, customer_address, order_details, total_price, status, cart_items_json) VALUES (?, ?, ?, ?, ?, ?, ?, 'قيد المراجعة', ?)",
-                        (tracking_code, current_user.id if current_user.is_authenticated else None, name, phone, address, order_details_text, float(total_price), json.dumps(cart_items)))
-                 
-        conn.commit()
+        new_order = Order(
+            tracking_code=tracking_code,
+            user_id=current_user.id if current_user.is_authenticated else None,
+            customer_name=name,
+            customer_phone=phone,
+            customer_address=address,
+            order_details=order_details_text,
+            total_price=float(total_price),
+            cart_items_json=json.dumps(cart_items)
+        )
+        db.session.add(new_order)
+        db.session.commit()
              
-    except sqlite3.OperationalError as e:
-        conn.rollback()
-        flash(" .", "error")
+    except Exception as e:
+        db.session.rollback()
+        flash("حدث خطأ أثناء الطلب.", "error")
         return redirect(url_for("cart"))
-    finally:
-        conn.close()
+        
     return render_template("success.html", tracking_code=tracking_code, name=name)
 
 @app.route("/track", methods=["GET", "POST"])
 def track_order():
-    if current_user.is_authenticated and current_user.is_admin:
-        return redirect(url_for('admin_dashboard'))
+    if not g.config.feature_tracking: return "<h2 style='text-align:center; margin-top:10%;'>خاصية تتبع الطلبات مغلقة حالياً.</h2>"
+    if current_user.is_authenticated and current_user.is_admin: return redirect(url_for('admin_dashboard'))
+        
     orders = []; searched = False
     if request.method == "POST":
         query = request.form.get("query", "").strip()
         searched = True
-        conn = get_db_connection(); cursor = conn.cursor()
-        cursor.execute("SELECT tracking_code, customer_name, order_details, total_price, status, created_at FROM orders WHERE tracking_code = ? OR customer_phone LIKE ? ORDER BY created_at DESC", (query, f"%{query}%"))
-        orders = cursor.fetchall(); conn.close()
+        orders = Order.query.filter((Order.tracking_code==query) | (Order.customer_phone.like(f"%{query}%"))).order_by(Order.created_at.desc()).all()
     elif current_user.is_authenticated:
         searched = True
-        conn = get_db_connection(); cursor = conn.cursor()
-        cursor.execute("SELECT tracking_code, customer_name, order_details, total_price, status, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC", (current_user.id,))
-        orders = cursor.fetchall(); conn.close()
+        orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
     return render_template("track.html", orders=orders, searched=searched)
 
+# ==========================================
+# المصادقة وملف المستخدم (Auth & Profile)
+# ==========================================
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if current_user.is_authenticated: return redirect(url_for('admin_dashboard') if current_user.is_admin else url_for('index'))
+    if current_user.is_authenticated:
+        if current_user.is_superadmin: return redirect(url_for('superadmin_dashboard'))
+        return redirect(url_for('admin_dashboard') if current_user.is_admin else url_for('index'))
+        
     if request.method == "POST":
         hashed_password = generate_password_hash(request.form.get("password"))
-        conn = get_db_connection(); cursor = conn.cursor()
+        new_user = User(
+            name=request.form.get("name"),
+            email=request.form.get("email"),
+            password=hashed_password,
+            phone=request.form.get("phone"),
+            whatsapp=request.form.get("whatsapp"),
+            address=request.form.get("address"),
+            is_admin=False,
+            is_superadmin=False
+        )
         try:
-            cursor.execute("INSERT INTO users (name, email, password, phone, whatsapp, address, is_admin) VALUES (?, ?, ?, ?, ?, ?, 0)", (request.form.get("name"), request.form.get("email"), hashed_password, request.form.get("phone"), request.form.get("whatsapp"), request.form.get("address")))
-            conn.commit(); flash(" .", "success"); return redirect(url_for("login"))
-        except: flash(" !", "error")
-        finally: conn.close()
+            db.session.add(new_user)
+            db.session.commit()
+            flash("تم إنشاء الحساب بنجاح.", "success")
+            return redirect(url_for("login"))
+        except:
+            db.session.rollback()
+            flash("البريد الإلكتروني مستخدم بالفعل!", "error")
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if current_user.is_authenticated: return redirect(url_for('admin_dashboard') if current_user.is_admin else url_for('index'))
+    if current_user.is_authenticated:
+        if current_user.is_superadmin: return redirect(url_for('superadmin_dashboard'))
+        return redirect(url_for('admin_dashboard') if current_user.is_admin else url_for('index'))
+        
     if request.method == "POST":
-        conn = get_db_connection(); cursor = conn.cursor()
-        cursor.execute("SELECT id, name, email, password, phone, whatsapp, address, is_admin FROM users WHERE email = ?", (request.form.get("email"),))
-        u = cursor.fetchone(); conn.close()
-        if u and check_password_hash(u[3], request.form.get("password")):
-            login_user(User(id=u[0], name=u[1], email=u[2], phone=u[4], whatsapp=u[5], address=u[6], is_admin=u[7]))
-            if u[7]:
-                flash(f"  {u[1]}  ", "success")
-                return redirect(url_for("admin_dashboard"))
-            flash(f"  {u[1]}!", "success")
-            return redirect(url_for("index"))
-        else: flash(" !", "error")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        
+        user = User.query.filter_by(email=email).first()
+            
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            if user.is_superadmin: return redirect(url_for('superadmin_dashboard'))
+            return redirect(url_for('admin_dashboard') if user.is_admin else url_for('index'))
+        else: 
+            flash("بيانات الدخول خاطئة!", "error")
     return render_template("login.html")
 
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    conn = get_db_connection(); cursor = conn.cursor()
+    if current_user.is_superadmin: return redirect(url_for('superadmin_dashboard'))
+    
     if request.method == "POST":
         if current_user.is_admin and "update_store_settings" in request.form:
-            settings_data = [
-                (request.form.get("store_whatsapp"), "whatsapp"),
-                (request.form.get("store_phone"), "phone"),
-                (request.form.get("store_instagram"), "instagram"),
-                (request.form.get("store_tiktok"), "tiktok"),
-                (request.form.get("store_facebook"), "facebook")
-            ]
-            cursor.executemany("UPDATE settings SET setting_value = ? WHERE setting_key = ?", settings_data)
-            conn.commit()
+            settings_data = {
+                "whatsapp": request.form.get("store_whatsapp"),
+                "phone": request.form.get("store_phone"),
+                "instagram": request.form.get("store_instagram"),
+                "tiktok": request.form.get("store_tiktok"),
+                "facebook": request.form.get("store_facebook")
+            }
+            for key, val in settings_data.items():
+                setting = Setting.query.filter_by(setting_key=key).first()
+                if setting: setting.setting_value = val
+            db.session.commit()
             flash("تم تحديث بيانات تواصل المتجر بنجاح!", "success")
         else:
-            cursor.execute("UPDATE users SET name=?, phone=?, whatsapp=?, address=? WHERE id=?", (request.form.get("name"), request.form.get("phone"), request.form.get("whatsapp"), request.form.get("address"), current_user.id))
-            conn.commit(); flash("تم تحديث بياناتك الشخصية بنجاح!", "success")
+            current_user.name = request.form.get("name")
+            current_user.phone = request.form.get("phone")
+            current_user.whatsapp = request.form.get("whatsapp")
+            current_user.address = request.form.get("address")
+            db.session.commit()
+            flash("تم تحديث بياناتك الشخصية بنجاح!", "success")
         return redirect(url_for("profile"))
          
     user_orders = []
     admin_stats = {}
-    
     if current_user.is_admin:
-        cursor.execute("SELECT COUNT(*) FROM products")
-        admin_stats['total_products'] = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(*) FROM coupons WHERE is_active=1")
-        admin_stats['active_coupons'] = cursor.fetchone()[0]
+        admin_stats['total_products'] = Product.query.count()
+        admin_stats['active_coupons'] = Coupon.query.filter_by(is_active=True).count()
     else:
-        cursor.execute("SELECT tracking_code, order_details, total_price, status, created_at FROM orders WHERE user_id = ? ORDER BY created_at DESC", (current_user.id,))
-        user_orders = cursor.fetchall()
+        user_orders = Order.query.filter_by(user_id=current_user.id).order_by(Order.created_at.desc()).all()
              
-    conn.close()
     return render_template("profile.html", user_orders=user_orders, admin_stats=admin_stats)
 
 @app.route("/logout")
 @login_required
-def logout(): logout_user(); return redirect(url_for("index"))
+def logout(): 
+    logout_user()
+    return redirect(url_for("index"))
 
+# ==========================================
+# لوحة تحكم المتجر (Store Admin)
+# ==========================================
 @app.route("/admin")
 @login_required
 def admin_dashboard():
-    if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor()
-    cursor.execute("SELECT SUM(total_price) FROM orders WHERE status != 'ملغي'"); stats_sales = cursor.fetchone()[0] or 0
-    cursor.execute("SELECT COUNT(*) FROM orders"); stats_orders = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'قيد المراجعة'"); stats_pending = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM users WHERE is_admin = 0"); stats_users = cursor.fetchone()[0]
-    cursor.execute("SELECT id, tracking_code, customer_name, customer_phone, customer_address, order_details, total_price, status, created_at FROM orders ORDER BY created_at DESC")
-    orders = cursor.fetchall(); conn.close()
+    if not current_user.is_admin or current_user.is_superadmin: abort(403)
+    
+    orders = Order.query.order_by(Order.created_at.desc()).all()
+    stats_sales = sum(o.total_price for o in orders if o.status != 'ملغي')
+    stats_orders = len(orders)
+    stats_pending = len([o for o in orders if o.status == 'قيد المراجعة'])
+    stats_users = User.query.filter_by(is_admin=False).count()
+    
     return render_template("admin.html", orders=orders, active_tab="orders", stats={'sales':round(stats_sales,2), 'orders':stats_orders, 'pending':stats_pending, 'users':stats_users})
 
 @app.route("/admin/invoice/<int:order_id>")
 @login_required
 def print_invoice(order_id):
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("SELECT id, tracking_code, customer_name, customer_phone, customer_address, order_details, total_price, status, created_at FROM orders WHERE id = ?", (order_id,)); order = cursor.fetchone(); conn.close()
-    if not order: abort(404)
+    order = Order.query.get_or_404(order_id)
     return render_template("admin_invoice.html", order=order)
 
 @app.route("/admin/update_status/<int:order_id>", methods=["POST"])
 @login_required
 def update_order_status(order_id):
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("UPDATE orders SET status = ? WHERE id = ?", (request.form.get("status"), order_id)); conn.commit(); conn.close(); return redirect(url_for("admin_dashboard"))
+    order = Order.query.get_or_404(order_id)
+    order.status = request.form.get("status")
+    db.session.commit()
+    return redirect(url_for("admin_dashboard"))
 
 @app.route("/admin/export")
 @login_required
 def export_orders():
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("SELECT * FROM orders ORDER BY created_at DESC"); orders = cursor.fetchall(); conn.close()
-    output = io.StringIO(); output.write('\ufeff'); writer = csv.writer(output); writer.writerow([" ", " ", " ", " ", " ", " ", " ", " ", " ", " "])
-    for ord in orders: writer.writerow([ord[0], ord[1], ord[2], ord[3], ord[4], ord[5], ord[6].replace('\n', ' | '), ord[7], ord[8], ord[9]])
-    response = Response(output.getvalue(), mimetype="text/csv; charset=utf-8"); response.headers["Content-Disposition"] = "attachment; filename=orders.csv"; return response
-
-@app.route("/admin/coupons", methods=["GET", "POST"])
-@login_required
-def admin_coupons():
-    if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor()
-    if request.method == "POST":
-        code = request.form.get("code", "").strip().upper()
-        try:
-            cursor.execute("INSERT INTO coupons (code, discount_type, discount_value, start_date, expiry_date, valid_days, target_type, target_id, min_order_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (code, request.form.get("discount_type"), float(request.form.get("discount_value") or 0), request.form.get("start_date") or None, request.form.get("expiry_date") or None, ",".join(request.form.getlist("valid_days")) if request.form.getlist("valid_days") else None, request.form.get("target_type") or 'all', int(request.form.get("target_product") or 0) if request.form.get("target_type")=='product' else int(request.form.get("target_category") or 0), float(request.form.get("min_order_value") or 0)))
-            conn.commit(); flash(" !", "success")
-        except sqlite3.IntegrityError: flash(" !", "error")
-        return redirect(url_for("admin_coupons"))
-    cursor.execute("SELECT * FROM coupons ORDER BY id DESC"); coupons = cursor.fetchall(); cursor.execute("SELECT id, name FROM categories"); categories = cursor.fetchall(); cursor.execute("SELECT id, name FROM products"); products = cursor.fetchall(); conn.close()
-    return render_template("admin_coupons.html", coupons=coupons, categories=categories, products=products, active_tab="coupons")
-
-@app.route("/admin/coupons/delete/<int:coupon_id>", methods=["POST"])
-@login_required
-def delete_coupon(coupon_id):
-    if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("DELETE FROM coupons WHERE id = ?", (coupon_id,)); conn.commit(); conn.close(); return redirect(url_for("admin_coupons"))
+    orders = Order.query.order_by(Order.created_at.desc()).all()
+    output = io.StringIO(); output.write('\ufeff'); writer = csv.writer(output); writer.writerow(["رقم الطلب", "كود التتبع", "اسم العميل", "رقم العميل", "العنوان", "التفاصيل", "الإجمالي", "الحالة", "التاريخ"])
+    for ord in orders: writer.writerow([ord.id, ord.tracking_code, ord.customer_name, ord.customer_phone, ord.customer_address, ord.order_details.replace('\n', ' | '), ord.total_price, ord.status, ord.created_at])
+    response = Response(output.getvalue(), mimetype="text/csv; charset=utf-8")
+    response.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+    return response
 
 @app.route("/admin/categories", methods=["GET", "POST"])
 @login_required
 def admin_categories():
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor()
     if request.method == "POST":
-        try: cursor.execute("INSERT INTO categories (name) VALUES (?)", (request.form.get("name").strip(),)); conn.commit()
-        except: flash(" !", "error")
+        try:
+            new_cat = Category(name=request.form.get("name").strip())
+            db.session.add(new_cat)
+            db.session.commit()
+        except:
+            db.session.rollback()
+            flash("القسم موجود مسبقاً!", "error")
         return redirect(url_for("admin_categories"))
-    cursor.execute("SELECT * FROM categories"); categories = cursor.fetchall(); conn.close()
+    categories = Category.query.all()
     return render_template("admin_categories.html", categories=categories, active_tab="categories")
 
 @app.route("/admin/categories/delete/<int:cat_id>", methods=["POST"])
 @login_required
 def delete_category(cat_id):
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("DELETE FROM categories WHERE id = ?", (cat_id,)); conn.commit(); conn.close(); return redirect(url_for("admin_categories"))
+    cat = Category.query.get_or_404(cat_id)
+    db.session.delete(cat)
+    db.session.commit()
+    return redirect(url_for("admin_categories"))
+
+@app.route("/admin/coupons", methods=["GET", "POST"])
+@login_required
+def admin_coupons():
+    if not current_user.is_admin: abort(403)
+    if not g.config.feature_coupons: return "<h2 style='text-align:center;'>الكوبونات مغلقة من الإدارة العليا.</h2>", 403
+    
+    if request.method == "POST":
+        try:
+            new_coupon = Coupon(
+                code=request.form.get("code", "").strip().upper(),
+                discount_type=request.form.get("discount_type"),
+                discount_value=float(request.form.get("discount_value") or 0),
+                start_date=request.form.get("start_date") or None,
+                expiry_date=request.form.get("expiry_date") or None,
+                valid_days=",".join(request.form.getlist("valid_days")) if request.form.getlist("valid_days") else None,
+                target_type=request.form.get("target_type") or 'all',
+                target_id=int(request.form.get("target_product") or 0) if request.form.get("target_type")=='product' else int(request.form.get("target_category") or 0),
+                min_order_value=float(request.form.get("min_order_value") or 0)
+            )
+            db.session.add(new_coupon)
+            db.session.commit()
+            flash("تم إضافة الكوبون!", "success")
+        except:
+            db.session.rollback()
+            flash("الكود موجود مسبقاً!", "error")
+        return redirect(url_for("admin_coupons"))
+        
+    coupons = Coupon.query.order_by(Coupon.id.desc()).all()
+    categories = Category.query.all()
+    products = Product.query.all()
+    return render_template("admin_coupons.html", coupons=coupons, categories=categories, products=products, active_tab="coupons")
+
+@app.route("/admin/coupons/delete/<int:coupon_id>", methods=["POST"])
+@login_required
+def delete_coupon(coupon_id):
+    if not current_user.is_admin: abort(403)
+    coupon = Coupon.query.get_or_404(coupon_id)
+    db.session.delete(coupon)
+    db.session.commit()
+    return redirect(url_for("admin_coupons"))
 
 @app.route("/admin/products", methods=["GET", "POST"])
 @login_required
 def admin_products():
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor()
+    if not g.config.feature_products: return "<h2 style='text-align:center;'>المنتجات مغلقة من الإدارة العليا.</h2>", 403
+    
     if request.method == "POST":
-        file = request.files.get("image_file"); img_path = request.form.get("image_url") or "https://via.placeholder.com/400"
+        file = request.files.get("image_file")
+        img_path = request.form.get("image_url") or "https://via.placeholder.com/400"
         if file and allowed_file(file.filename):
-            fn = f"{''.join(random.choices(string.ascii_lowercase, k=6))}_{secure_filename(file.filename)}"; file.save(os.path.join(app.config['UPLOAD_FOLDER'], fn)); img_path = url_for('static', filename=f"uploads/{fn}")
-        cursor.execute("INSERT INTO products (name, price, discount_price, image, description, category_id, discount_end_date, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                        (request.form.get("name"), float(request.form.get("price") or 0), float(request.form.get("discount_price") or 0), img_path, request.form.get("description"), int(request.form.get("category_id")) if request.form.get("category_id") else None, request.form.get("discount_end_date") or None, int(request.form.get("stock") or 10)))
-        conn.commit(); flash(" !", "success"); return redirect(url_for("admin_products"))
-    cursor.execute("SELECT p.id, p.name, p.price, p.discount_price, p.image, p.description, p.category_id, p.discount_end_date, p.stock, c.name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC"); products = cursor.fetchall()
-    cursor.execute("SELECT * FROM categories"); categories = cursor.fetchall(); conn.close()
+            fn = f"{''.join(random.choices(string.ascii_lowercase, k=6))}_{secure_filename(file.filename)}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+            img_path = url_for('static', filename=f"uploads/{fn}")
+            
+        new_prod = Product(
+            name=request.form.get("name"),
+            price=float(request.form.get("price") or 0),
+            discount_price=float(request.form.get("discount_price") or 0),
+            image=img_path,
+            description=request.form.get("description"),
+            category_id=int(request.form.get("category_id")) if request.form.get("category_id") else None,
+            discount_end_date=request.form.get("discount_end_date") or None,
+            stock=int(request.form.get("stock") or 10)
+        )
+        db.session.add(new_prod)
+        db.session.commit()
+        flash("تم إضافة المنتج بنجاح!", "success")
+        return redirect(url_for("admin_products"))
+        
+    products = Product.query.order_by(Product.id.desc()).all()
+    categories = Category.query.all()
     return render_template("admin_products.html", products=products, categories=categories, active_tab="products")
 
 @app.route("/admin/products/edit/<int:prod_id>", methods=["GET", "POST"])
 @login_required
 def admin_edit_product(prod_id):
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor()
+    product = Product.query.get_or_404(prod_id)
+    
     if request.method == "POST":
-        cursor.execute("SELECT image FROM products WHERE id=?", (prod_id,)); old_img = cursor.fetchone()[0]
-        file = request.files.get("image_file"); img_path = request.form.get("image_url")
+        file = request.files.get("image_file")
+        img_path = request.form.get("image_url")
         if file and allowed_file(file.filename):
-            fn = f"{''.join(random.choices(string.ascii_lowercase, k=6))}_{secure_filename(file.filename)}"; file.save(os.path.join(app.config['UPLOAD_FOLDER'], fn)); img_path = url_for('static', filename=f"uploads/{fn}")
-        cursor.execute("UPDATE products SET name=?, price=?, discount_price=?, image=?, description=?, category_id=?, discount_end_date=?, stock=? WHERE id=?",
-                        (request.form.get("name"), float(request.form.get("price") or 0), float(request.form.get("discount_price") or 0), img_path or old_img, request.form.get("description"), int(request.form.get("category_id")) if request.form.get("category_id") else None, request.form.get("discount_end_date") or None, int(request.form.get("stock") or 0), prod_id))
-        conn.commit(); conn.close(); flash(" !", "success"); return redirect(url_for("admin_products"))
-    cursor.execute("SELECT * FROM products WHERE id = ?", (prod_id,)); product = cursor.fetchone()
-    cursor.execute("SELECT * FROM categories"); categories = cursor.fetchall(); conn.close()
+            fn = f"{''.join(random.choices(string.ascii_lowercase, k=6))}_{secure_filename(file.filename)}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], fn))
+            img_path = url_for('static', filename=f"uploads/{fn}")
+            
+        product.name = request.form.get("name")
+        product.price = float(request.form.get("price") or 0)
+        product.discount_price = float(request.form.get("discount_price") or 0)
+        if img_path: product.image = img_path
+        product.description = request.form.get("description")
+        product.category_id = int(request.form.get("category_id")) if request.form.get("category_id") else None
+        product.discount_end_date = request.form.get("discount_end_date") or None
+        product.stock = int(request.form.get("stock") or 0)
+        
+        db.session.commit()
+        flash("تم التعديل بنجاح!", "success")
+        return redirect(url_for("admin_products"))
+        
+    categories = Category.query.all()
     return render_template("admin_edit_product.html", product=product, categories=categories, active_tab="products")
 
 @app.route("/admin/products/delete/<int:prod_id>", methods=["POST"])
 @login_required
 def delete_product(prod_id):
     if not current_user.is_admin: abort(403)
-    conn = get_db_connection(); cursor = conn.cursor(); cursor.execute("DELETE FROM products WHERE id = ?", (prod_id,)); conn.commit(); conn.close(); return redirect(url_for("admin_products"))
+    product = Product.query.get_or_404(prod_id)
+    db.session.delete(product)
+    db.session.commit()
+    return redirect(url_for("admin_products"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True, port=4000)
