@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
+    <div class="admin-nav-tabs">
+        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
+        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}"><i class="fa-solid fa-tags"></i> إدارة المنتجات والمخزون</a>
+        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
+        <!-- تمت إضافة رابط الكوبونات هنا لكي لا يختفي -->
+        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}"><i class="fa-solid fa-ticket"></i> نظام الكوبونات</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: start;">
+    <!-- إضافة تصنيف جديد -->
+    <div class="auth-card" style="margin: 0; width: 100%;">
+        <h3><i class="fa-solid fa-plus-circle"></i> إضافة تصنيف جديد</h3>
+        <form action="{{ url_for('admin_categories') }}" method="POST">
+            <div class="form-group" style="margin-top: 15px;">
+                <label>اسم التصنيف (مثال: ساعات، ملابس، عطور...)</label>
+                <input type="text" name="name" required placeholder="أدخل الاسم هنا...">
+            </div>
+            <button type="submit" class="submit-btn"><i class="fa-solid fa-check"></i> حفظ التصنيف</button>
+        </form>
+    </div>
+
+    <!-- جدول التصنيفات الحالية -->
+    <div>
+        <h3>التصنيفات المتاحة في المتجر</h3>
+        <table class="admin-table" style="margin-top: 15px;">
+            <thead>
+                <tr>
+                    <th>م</th>
+                    <th>اسم التصنيف</th>
+                    <th>إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cat in categories %}
+                <tr>
+                    <td>{{ cat[0] }}</td>
+                    <td><strong>{{ cat[1] }}</strong></td>
+                    <td style="text-align: center;">
+                        <form action="{{ url_for('delete_category', cat_id=cat[0]) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا التصنيف؟');">
+                            <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 20px; color: #777;">لا يوجد تصنيفات حالياً.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

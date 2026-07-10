@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="auth-card" style="max-width: 800px;">
+    <h2><i class="fa-solid fa-truck-fast"></i> تتبع شحنتك وحالة الطلب</h2>
+    <p class="form-hint">أدخل رقم الهاتف الذي طلبت به أو رقم تتبع الطلب (مثال: TRK-12345) لمعرفة أين وصل طلبك.</p>
+
+    <form action="{{ url_for('track_order') }}" method="POST" style="display: flex; gap: 10px; margin-bottom: 30px;">
+        <input type="text" name="query" required placeholder="أدخل رقم الهاتف أو رقم التتبع..." style="flex-grow: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem;">
+        <button type="submit" class="add-to-cart-btn" style="padding: 12px 25px; font-size: 1rem;"><i class="fa-solid fa-magnifying-glass"></i> بحث</button>
+    </form>
+
+    {% if searched %}
+        {% if orders %}
+            <h3 style="margin-bottom: 15px; color: var(--primary-color); border-bottom: 2px solid #eee; padding-bottom: 8px;">نتائج البحث:</h3>
+            <div style="display: grid; gap: 15px;">
+                {% for ord in orders %}
+                <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #fafafa; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <span style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; color: #495057;"># {{ ord[0] }}</span>
+                        <h4 style="margin: 8px 0 5px; color: var(--primary-color);">الطلب: {{ ord[1] }}</h4>
+                        <p style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">{{ ord[2].replace('\n', ' | ') }}</p>
+                        <small style="color: #888;">تاريخ الطلب: {{ ord[5] }}</small>
+                    </div>
+                    
+                    <div style="text-align: left; min-width: 150px;">
+                        <span style="display: block; font-size: 1.2rem; font-weight: bold; color: var(--primary-color); margin-bottom: 8px;">{{ ord[3] }} ج.م</span>
+                        <!-- حالة الشحنة الملونة -->
+                        <span style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem;
+                            {% if 'التسليم' in ord[4] %} background: #d4edda; color: #155724;
+                            {% elif 'التوصيل' in ord[4] %} background: #cce5ff; color: #004085;
+                            {% elif 'التأكيد' in ord[4] %} background: #fff3cd; color: #856404;
+                            {% else %} background: #e2e3e5; color: #383d41; {% endif %}">
+                            {{ ord[4] }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-warning">لم يتم العثور على أي شحنات بهذا الرقم! تأكد من صحة رقم الهاتف أو رقم التتبع.</div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

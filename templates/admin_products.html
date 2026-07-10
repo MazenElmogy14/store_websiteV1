@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fa-solid fa-gauge-high"></i> لوحة التحكم الإدارية</h2>
+    <div class="admin-nav-tabs">
+        <a href="{{ url_for('admin_dashboard') }}" class="tab-btn {% if active_tab=='orders' %}active{% endif %}"><i class="fa-solid fa-boxes-packing"></i> الطلبات الواردة</a>
+        <a href="{{ url_for('admin_products') }}" class="tab-btn {% if active_tab=='products' %}active{% endif %}"><i class="fa-solid fa-tags"></i> إدارة المنتجات</a>
+        <a href="{{ url_for('admin_categories') }}" class="tab-btn {% if active_tab=='categories' %}active{% endif %}"><i class="fa-solid fa-layer-group"></i> التصنيفات</a>
+        <a href="{{ url_for('admin_coupons') }}" class="tab-btn {% if active_tab=='coupons' %}active{% endif %}"><i class="fa-solid fa-ticket"></i> كوبونات الخصم</a>
+    </div>
+</div>
+
+<div style="background: white; padding: 25px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 30px;">
+    <h3 style="color: var(--primary-color); margin-bottom: 20px;"><i class="fa-solid fa-box-open"></i> إضافة منتج جديد وضبط عروض الخصم والمخزون</h3>
+    
+    <form action="{{ url_for('admin_products') }}" method="POST" enctype="multipart/form-data">
+        <div class="form-row">
+            <div class="form-group">
+                <label>اسم المنتج *</label>
+                <input type="text" name="name" required placeholder="مثال: ساعة يد كاسيو جلد...">
+            </div>
+            <div class="form-group">
+                <label>التصنيف التابع له</label>
+                <select name="category_id" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;">
+                    <option value="">-- بدون تصنيف --</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>السعر الأساسي (ج.م) *</label>
+                <input type="number" step="0.5" name="price" required placeholder="1000">
+            </div>
+            <div class="form-group">
+                <label style="color: #e67e22;">سعر الخصم / العرض (ج.م) <small>(اتركه 0 إذا لم يكن هناك خصم)</small></label>
+                <input type="number" step="0.5" name="discount_price" placeholder="850">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="background: #fff8e1; padding: 15px; border-radius: 8px; border: 1px solid #ffe082;">
+                <label style="color: #d84315; font-weight: bold;"><i class="fa-solid fa-stopwatch"></i> تاريخ ووقت انتهاء الخصم:</label>
+                <input type="datetime-local" name="discount_end_date" style="margin-top: 8px;">
+                <small style="display: block; color: #666; margin-top: 5px;">اتركه فارغاً لخصم دائم بدون وقت.</small>
+            </div>
+            
+            <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <label style="color: #1565c0; font-weight: bold;"><i class="fa-solid fa-boxes-stacked"></i> الكمية المتاحة في المخزن (Stock) *:</label>
+                <input type="number" name="stock" required value="10" min="0" style="margin-top: 8px;">
+                <small style="display: block; color: #666; margin-top: 5px;">سيتم خصم العدد تلقائياً عند شراء العملاء؛ وإذا أصبح 0 يتوقف الشراء.</small>
+            </div>
+        </div>
+
+        <div class="form-row" style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; margin-bottom: 18px;">
+            <div class="form-group" style="margin: 0;">
+                <label style="color: var(--primary-color);"><i class="fa-solid fa-upload"></i> ارفع صورة المنتج من جهازك:</label>
+                <input type="file" name="image_file" accept="image/*">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label>أو ضع رابط صورة خارجي (URL):</label>
+                <input type="url" name="image_url" placeholder="https://...">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>وصف المنتج ومميزاته</label>
+            <textarea name="description" rows="2" placeholder="اكتب وصفاً جذاباً يشجع العميل على الشراء..."></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" style="background: var(--accent-color);"><i class="fa-solid fa-plus"></i> نشر المنتج في الكتالوج الآن</button>
+    </form>
+</div>
+
+<h3>قائمة المنتجات المتاحة حالياً في المتجر</h3>
+<div class="admin-table-wrapper">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>الصورة</th>
+                <th>المنتج</th>
+                <th>التصنيف</th>
+                <th>السعر والعرض</th>
+                <th>المخزون</th>
+                <th>انتهاء الخصم</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prod in products %}
+            <tr>
+                <td style="width: 80px; text-align: center;"><img src="{{ prod[4] }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;"></td>
+                <td><strong>{{ prod[1] }}</strong><br><small style="color: #777;">{{ prod[5] }}</small></td>
+                <td><span style="background: #e9ecef; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">{{ prod[9] or 'عام' }}</span></td>
+                <td>
+                    {% if prod[3] > 0 and prod[3] < prod[2] %}
+                        <span style="text-decoration: line-through; color: #999; font-size: 0.9rem;">{{ prod[2] }} ج.م</span><br>
+                        <strong style="color: #e74c3c; font-size: 1.1rem;">{{ prod[3] }} ج.م</strong>
+                    {% else %}
+                        <strong style="color: var(--primary-color); font-size: 1.1rem;">{{ prod[2] }} ج.م</strong>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if prod[8] <= 0 %}
+                        <span style="background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-weight: bold;">نفد المخزون ❌</span>
+                    {% elif prod[8] < 3 %}
+                        <span style="background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 4px; font-weight: bold;">متبقي {{ prod[8] }} فقط ⚠️</span>
+                    {% else %}
+                        <span style="background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-weight: bold;">متوفر: {{ prod[8] }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem; direction: ltr; text-align: center;">
+                    {% if prod[7] %}
+                        <span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 4px; display: inline-block;">{{ prod[7].replace('T', ' ') }}</span>
+                    {% else %}
+                        <span style="color: #aaa;">مستمر دائماً</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <a href="{{ url_for('admin_edit_product', prod_id=prod[0]) }}" class="edit-btn" style="background: #3498db; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.9rem;"><i class="fa-solid fa-pen-to-square"></i> تعديل</a>
+                        <form action="{{ url_for('delete_product', prod_id=prod[0]) }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟');">
+                            <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-trash"></i> حذف</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

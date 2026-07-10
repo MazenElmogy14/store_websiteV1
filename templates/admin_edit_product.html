@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="admin-header">
+    <h2><i class="fa-solid fa-pen-to-square"></i> تعديل بيانات المنتج والعروض والمخزون</h2>
+    <div class="admin-nav-tabs">
+        <a href="{{ url_for('admin_products') }}" class="tab-btn active"><i class="fa-solid fa-arrow-right"></i> عودة لقائمة المنتجات</a>
+    </div>
+</div>
+
+<div class="auth-card" style="max-width: 800px; margin: 0 auto;">
+    <h3 style="color: var(--primary-color); margin-bottom: 20px; text-align: center;">تعديل المنتج: ({{ product[1] }})</h3>
+    
+    <form action="{{ url_for('admin_edit_product', prod_id=product[0]) }}" method="POST" enctype="multipart/form-data">
+        <div class="form-row">
+            <div class="form-group">
+                <label>اسم المنتج *</label>
+                <input type="text" name="name" value="{{ product[1] }}" required>
+            </div>
+            <div class="form-group">
+                <label>التصنيف التابع له</label>
+                <select name="category_id" style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px;">
+                    <option value="">-- بدون تصنيف --</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat[0] }}" {% if product[6] == cat[0] %}selected{% endif %}>{{ cat[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>السعر الأساسي (ج.م) *</label>
+                <input type="number" step="0.5" name="price" value="{{ product[2] }}" required>
+            </div>
+            <div class="form-group">
+                <label style="color: #e67e22;">سعر الخصم / العرض (ج.م)</label>
+                <input type="number" step="0.5" name="discount_price" value="{{ product[3] }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="background: #fff8e1; padding: 15px; border-radius: 8px; border: 1px solid #ffe082;">
+                <label style="color: #d84315; font-weight: bold;"><i class="fa-solid fa-stopwatch"></i> تعديل تاريخ انتهاء الخصم:</label>
+                <input type="datetime-local" name="discount_end_date" value="{{ product[7] or '' }}" style="margin-top: 8px;">
+            </div>
+            
+            <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                <label style="color: #1565c0; font-weight: bold;"><i class="fa-solid fa-boxes-stacked"></i> تعديل كمية المخزون (Stock) *:</label>
+                <input type="number" name="stock" required value="{{ product[8] }}" min="0" style="margin-top: 8px;">
+            </div>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px dashed #ccc; margin-bottom: 18px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <span style="display: block; font-size: 0.85rem; color: #666; margin-bottom: 5px;">الصورة الحالية:</span>
+                <img src="{{ product[4] }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+            </div>
+            <div style="flex-grow: 1;">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label style="color: var(--primary-color);"><i class="fa-solid fa-upload"></i> تغيير الصورة بصورة جديدة من جهازك:</label>
+                    <input type="file" name="image_file" accept="image/*">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label>أو ضع رابط صورة خارجي (URL):</label>
+                    <input type="url" name="image_url" placeholder="https://..." value="{% if product[4].startswith('http') %}{{ product[4] }}{% endif %}">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>وصف المنتج ومميزاته</label>
+            <textarea name="description" rows="3">{{ product[5] or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" style="background: #2980b9;"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات الآن</button>
+    </form>
+</div>
+{% endblock %}
